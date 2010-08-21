@@ -1,0 +1,401 @@
+#+STARTUP: showall
+
+* Framework
+
+When I get to writing the music software, the available framework
+could probably go something like this.
+
+- Ocaml as the implementaton langauge.
+- Scheme as the extension language, several options for interpreter in
+  ocaml 
+  - Schoca http://sourceforge.net/projects/chesslib/, older - buggy
+  - Ocs http://will.iki.fi/software/ocs/, newer, can't get the
+    r5rs-test to run from schoca
+  - http://www.complang.tuwien.ac.at/schani/oldstuff/index.html#schemeinocaml
+- Ocaml bindings to Cairo rendering engine
+  http://www.cairographics.org/cairo-ocaml/
+- Bindings appear to require lablgtk
+
+
+Some other related programs
+
+- SpiderCaml is a javascript interpreter for ocaml.  Not sure about
+  how to get bindings.
+  http://alain.frisch.fr/soft.html
+
+- This is a good article on design of emacs-like text editors
+  http://www.finseth.com/craft/
+
+I was thinking about the nature of applications and how their UI
+should be designed to suit it.  A text editor is designed for input of
+text.  Primary keystrokes should pertain to this.  I think emacs
+accomplishes this reasonably well with its decision to assign most of
+the standard keys to self-insertion, secondary commands (motion) to
+single-key chords, and more complex commands (find-file) to multi-key
+chords.  Vim goes the other route and explicitly establishes two modes
+of operation for this purpose, but being well practiced at emacs I
+like being able to make quick edits to text on the fly without having
+to switch modes.  Conkeror makes a good decision that the point of a
+web browser is to move around in web pages so most key strokes should
+function for that purpose.  Firefox reserves most single key strokes
+for typing as it does not adjust the key map to different situations
+(text box, address bar, body of web page), at least not over much.
+
+* Other Tools of interest
+** Canonrus
+Music notation program, allows ruby/python scripting interface
+http://canorus.berlios.de
+
+** Snd
+waveform analyzer, allows scheme, ruby, and forth scripting.
+Interface is intentionally similar to emacs
+https://ccrma.stanford.edu/software/snd/snd/snd.html
+
+** Cameleon
+Ocaml text editor which has a lot of emacs-like features already built
+
+
+** Gsharp
+http://common-lisp.net/project/gsharp/
+
+This is a common lisp-based notation program which uses a McCLIM (an
+open source implementation of the Common Lisp Interface Manager
+specification).  It looks like a great start to the ideas that I
+have. 
+
+There are a lot of basic music stuff missing from it which are
+described in the ending (page 73) of the PS manual.  
+
+There is a discussion of the algorithm used for beaming in the manual,
+appendix B and discussion of placement of accidentals in appendix C.
+
+** Seed
+http://live.gnome.org/Seed
+
+A GTK scripting implementation of javascript, allows dynamic binding
+to new GTK objects through some sort of introspection deal.
+
+** A potentially good combination
+Steal the UI of Cameleon for managament, enable note buffers usinge
+Cairo's ocaml interface (pretty good, in ~/packages) and run ocs as
+the embedded extension language.  I would probably need to transfer a
+a lot of control from Cameleon2 
+
+** PXP
+An interesting XML library for ocaml which allows automatic parsing
+and also mirroring the XML classes as other classes with additional
+functionality. 
+
+** Wikifonia
+A great place to search for free lead sheets
+
+** Lilypond
+It looks like there are a lot of functions in
+lilypond/scm/output-ps.scm which create postscript drawing
+instructions for various objects.  So at some point in the lilypond
+executable, it must jump into these functions to produce the
+postscript. 
+
+Check out the developer resources on Lilypond's site as this is where
+the regression tests are stored, bibliographies on engraving, and
+documentation of the code.
+
+The hierarchy of their data appears to be a series of nested contexts:
+Score > Staff > Voice.  Each context has associated with it Engravers
+for different musical elements.  According to essay, the Engravers
+need to have some awareness of of one another but are somewhat
+independent.  
+
+I'm still trying to disect the various source files and how they relate
+to one another: for instance Accidental_interface, Accidental_entry,
+Accidental_engraver, Accidental_placement.  It may be sort of lost
+cause to understand their approach as it is very complex.
+
+* Software Design
+Spent some time reading Steve Yegge's post on properties of good
+software.  The idea of a "living" piece of software is a good thing to
+abide by, that restarting is more or less equivalet to killing the
+program and should be avoided at all costs.  Also, the division
+between "hardware" which are the immutable pieces of the system and
+"software" which are the pieces which can be changed, reprogrammed,
+customized is good.  He goes so far as to term statically typed
+languges (haskell, ml) end up defining hardware.  This is not bad, but
+it is good to recognize that it is the case.  Extending the
+functionality of a running system is not really possible in Ocaml
+necessitating the use of a scripting language.  
+
+In essence, most systems are based on C.  Scheme and lua are written
+in C for the most part.  Therefore, interfacing them to libraries
+written in C is not so bad.  If we were going to start from scheme or
+lua directly, you would code primitives (hardware) in C and build the
+system on top of that.  Glue between the parts becomes C.  One must
+worry about memory management cooperating between the base language
+(C), interpreter (scheme/lua) and libraries the in these cases.  If
+the hooks are set up well, there is not need to worry.  If not, then
+you're hosed.
+
+I'm looking at the implementation language being Ocaml.  That would
+mean that I'd have to follow one of two routes:
+
+- Interface the scripting language with Ocaml with C as the glue.
+  There would be a lot of ugliness exposing Ocaml functions as
+  exported C functions: the API for this is there but looks gross.
+  Getting respective memory managers to cooperate would probably also
+  be a mess.
+
+- Contain the interpreter within Ocaml so that the there is no glue:
+  exporting core functions from Ocaml to the interpreted language is
+  straightforward and any library bindings are given to the extension
+  language as functions from Ocaml.  The advantage here gluing is a
+  cinch and there is only one memory manager.  The disadvantage is the
+  need to write an interpreter.  Another potentially awful issue is
+  getting the types to cooperate betwee the host (ocaml) and embedded
+  (lua/scheme) and language.  In looking at ocs's approach to this,
+  it's not bad as we're only dealing with the base types of scheme
+  which are limited.  However, building a notation application will
+  employ a wealth of types which will require a lot of new additions
+  to the type system.  According to the Module Mania paper about
+  combining Lua and Ocaml, this was not easy, their strategy used a
+  ton of functors which is not really a direction I want to go in,
+  because it'd be hard for me and hard for anyone else that came
+  along.
+
+The type difficulty in ocaml should not be underestimated.  The
+ability of straight lua to seamlessly handle a lot of different data
+types is cool even if the glue to put it together looks bad.
+
+One thing to bear in mind is the model of emacs.  Hardly anyone
+updates primitives in order to extend the functionality of emacs.
+Everything is done at the scripting language level.  This makes it
+imperative to have the wealth of the types available to the scripting
+interface.  Access to internal data will be particulaly important for
+designing layout algorithms which are pluggable and modifiable.  This
+means a lot of types will need to be available to the scripting
+language.  
+
+In scheme this will mean modifying the scheme implementation to make
+the types understandable to scheme system.  This is similar to the
+approach of emacs in which there exist the fundamental lisp types in
+addition to the emacs types (buffers, mark, region, etc).  
+
+It is harder for me to see exactly how this would work with Lua.  The
+language is not really intended for massive type extension.  Rather,
+you're supposed to be able to do it with the userdata.  I have been
+looking at this in Lua and the first thing that has struck me is that
+this is where the typing system breaks in C and becomes onerous in
+Ocaml.  As in the scheme case, in order to communicate types between
+implementation and extension language, the extension language types
+must be well defined in the implementation language.  I don't think
+this would be too bad though as the fundamental types are not too bad
+and can be encapsulated with a polymorphic type:
+
+type userdata = 
+  MusicBuffer of musicbuffer | TextBuffer of textbuffer |
+  MusicRegion of musicregion | MusicPosition of muspos | etc.
+
+These will not change too much once established in the hardware.  On
+the Lua side, there are a number of ways manage the identification of
+the types of data.  The easiest is just to associate a metatable with
+the .type field in it when installing the fundamental types.  
+
+There appears to be a wealth of ways to structure packages in Lua,
+basically because it has such loose semantics for defining things.
+As long as I use reasonably regular means for setting up the packages
+and metatables, this should not be too bad.
+
+I would like to be able to do real package managment with managed
+namespaces in the embedded language.  Scheme, even with R5RS macros,
+does not really allow for this to happen to due to limitations in the
+macro system.  Lua is much mor appropriate for this but it means I'd
+have to roll my own interpreter.
+
+* Interpreters
+
+There is a paper by Nick Benton, "Embedded Interpreters," which
+discusses some of the issues for gluing implementation and object
+language together.  His implementation language is SML so there are
+probably some good tricks here.
+
+Norman Ramsey wrote a number of papers on embedding Lua in Ocaml.
+http://www.cs.tufts.edu/~nr/
+
+
+* Two Libraries
+There are essentially then two libraries that I would need to create
+which interfaced with Lua.  
+
+The first, and most important, is a library for doing layout of some
+internal representation of music.  Given a "region" of interest and
+perhaps start and stop constraints, it would attempt to lay the
+musical elements out on a display.  For the time being, I would limit
+this to one staff but ultimately it would be nice to do multiple
+staves for score printing.  The library should be repluggable in that
+the host language provides primitives that may take embedded language
+elements as callbacks to do various things.
+
+The second library is a basic editor/gui library which people can plug
+things into.  Again, primitives in a host language with hooks back
+into the embedded language.
+
+* An implementation of Lua
+It would have to definitely have
+- Tables
+- Metatables
+- Error handling
+
+Could probably skip these on the first pass
+- Coroutines
+
+Perhaps a better way of going about this would be just to start with
+the C implementation of Lua and write some C primitives to test out
+the layout ideas first.  This would allow me to get a feel for what is
+required.  We could do this sans gui for the moment just running in
+the Lua interpreter.  It would also ecourage the development
+of the notation layout library as a modular piece of software and let
+me test some ideas to begin with.  Valgrind will help with the
+inevitable memory problems.  Writing in C may also help me to utilize
+some pre-existing code from lilypond.
+
+* Layout Problem
+
+I spent some time looking at the Lilypond website and reading there
+code.  The essay was particularly interesting as it discussed the
+difficulties of actually laying out the notes once you've figured out
+the necessary notation.  The way it looks is that an initial placement
+is made and then lots of adjustments are tried as a way of trying to
+improve an objective function gauging the visual appeal of the music.
+Sound familiar?  
+
+This seems like a something that would be incredibly intersting to
+start woring on.  The objective function should be pluggable: can
+alter it to something else.  The way to get online layout vs. batch
+processing as in Lilypond is to have ensure the initial layout is
+produced fast and the optimizer can be run at varying levels of
+tolerance.  I envision the optimization process as being discrete so
+we're probably best off starting with simple search strategies which
+check at each step how much time has elapsed and bale out with the
+best solution after reaching the maximum.
+
+There is the issue of representation and measure of the objective
+function as the objects of interest are graphical and it will probably
+take some effort to measure certain things like clashes of slurs with
+notes.  Also merely deciding which things should be included in the
+merit function could be sort of difficult at first though if I can
+find the Lilypond decisions it will probably be inspirational.
+Determining which functions may be used to adjust parameters may also
+be onerous.
+
+To enable hackability of these functions, they need to be reasonably
+accessible from the embedded language (scheme/lua).  This will allow a
+lot of things to be tried in a scriptable fashion and then ultimately
+translated into the underlying implementation language (software ->
+hardware transition).
+
+* The Model
+
+Lilypond makes an interesting point in that the notion of a
+hierarchical view of notation has some limitations, especially for
+certain types of music such as piano pieces (cross staff beaming,
+slurring) and modern music.
+
+The question then becomes, how do you actually implement a model-view
+paradigm that is managable?  Beaming is a good place to start.  Where
+is the decision actually made to beam two notes?  In Lilypond this can
+be adjusted manually using brackets so that beams run over rests (done
+in Finale also).  This seems simply implemented: beams have a start
+and stop element to which they are attached and follow suit.  Same
+with slurs.  What about going accross a staff though?  In the sense of
+a note belonging to a staff, this sort of breaks down some.
+
+In looking at the regression tests on cross staff beaming, it seems
+that the lilypond source has explicit notations for changing the staff
+to which a note belongs.  They can also change the direction of the
+beam explicitly with commands.  Thus the notation in source is a bit
+kludgy, but from the standpoint of interpreting the input, it's not
+too bad: just adjust the pointer to the note's parent staff at the
+before determining position.  Everything else falls into place then:
+stems, beams, and slurs all happen after that.
+
+The question is, how does one implement this in a sensible way for an
+interactive, keyboard driven GUI?  No answers at this time.
+
+* Haskell?
+
+There are some interesting bindings available for Haskell which might
+make it fun to try programming.  There is a good looking Lua interface
+and a GTK binding with some Cairo support, though it does not look
+like PDF support is present at this point.
+
+* Plan
+The thing to do is to start small.  The first goal will simply be to
+design a small Ocaml library for rendering notation using Cairo.  I
+can worry about GUI and extension languages later, but having a few
+basic pieces of soft hardware will be the first step towards
+understanding what's going on.  
+
+I'll need to think of how to represent the data.  At first, this can
+probably be a compiled Ocaml data structure which will be easy
+enough.  I'll need to learn how to use Cairo then according to the
+ocaml interface and probably also from reading the C tutorials on it.
+This will also force me to start setting up clear boundaries between
+drawing functions, music abstractions, and the ultimate user
+experience. 
+
+* Representations
+The most basic representation is that of the logical musical elements:
+staff, clef, notes, slurs, etc.  Call this the logical level.
+
+The next level of representation is the layout representation.  This
+is where decisions are made about accidentals that need to appear,
+stem directions, beaming.  This is where initial and optimized
+positions are chosen and constraints appear.  
+
+The final level is display which is where a layout is converted into a
+series of drawing instructions.  There may need to be some glue in
+between layout and display as the actual sizes of the elements may not
+be available except at the display level.  
+
+Not sure at this point how to do redrawing properly.  The simple way
+is, add a new element, completely recompute layout, then redraw ths
+screen.  For large scores, this will get taxing quickly.  The first
+step to beter efficiency is recompute layout only for those parts that
+need it.  If we are working on bar 4 and nothing has changed which
+would affect bar 1, there is no need to recompute its layout.  An even
+more efficient means would be to then only redraw that part of the
+layout that has changed from the previous version.  With proper
+constraints, this may be possible by masking or clipping only the part
+of the score that needs to be redrawn.  Keep the suggestions on the
+Cairo FAQ in mind as to how clipping can either help or hinder
+performance.
+
+http://cairographics.org/FAQ/
+
+In thinking about how to get accurate reflections of system breaking
+between score and part views, I'll want to attach annotations either
+at the measure or staff (group) level of individual staffs to indicate
+that when they are being viewed in a reduced setting, there should be
+system breaks at the defined positions.  
+
+* Design using Cairo
+I played around with some of the ocaml-cairo bindings and found that
+drawing from a gtk surface to a pdf surface does not result in very
+nice looking stuff.  With that in mind, I'll need to write code that
+takes a Cairo drawing object and renders a layout rather than rely on
+the cross-surface drawing functionality.  This is a little icky but we
+want our PDF output to look nice, right?
+
+In playing with this in the 'cube' example of ocaml-cairo, I was able
+to add gtk widgets and get callbacks to work pretty quickly.  That
+bodes well for the eventual GUI design.  But first, library layout
+stuff. 
+
+* Threads
+Take a look at the Ocaml thread library for potential means of
+branching rendering or layout optimization off.
+
+* Glue between Scheme-Ocaml
+Designing the library, I should probably start off pretty early
+thinking about the scheme representation of the underlying hardware.
+It seems that there are some advanced features in slib which include
+syntax-case which, if we could get it to run with ocs, it would be
+useful for developing packages.
