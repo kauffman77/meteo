@@ -1,6 +1,611 @@
+#+TITLE: Meteo Development Notes
 #+STARTUP: showall
+#+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
-* Framework
+* 05/06/2011 Friday
+
+** Reflection warnings
+I have been experimenting a bit with trying to bind
+=*warn-on-reflection*= to only affect certain codes, but this does not
+appear to be working properly.  Part of this is the lexical scoping of
+Clojure, which means definitions don't get carried through, but the
+real problem is that these warnings are compile time.  That means that
+the compiler is the thing that is looking at for the symbol and I
+can't hack into it.  This is one time when dynamic scope might
+actually be pretty useful, but oh well.  I can get around it with a
+little bit of hackery.
+
+** Clojure tools
+Leiningen is a project management tool which is supposed to facilitate
+java export.  Lancelot is a library builder.  Maven is Apache
+software, project management.  It appears leiningen depends on these
+other two for various things.
+
+* 05/05/2011 Thursday
+
+** Colum averages in org-mode tables
+Use a formula like this to get a column average in an org-table
+| C-u C-c =      | Edit formula in cell             |
+| vmean(@1..@14) | Mean of row 1-14, current column |
+
+** Clojure and Reflection
+Turn on reflection warnings doing
+#+BEGIN_SRC clojure
+(set! *warn-on-reflection* true)
+#+END_SRC
+This turns out to have a *huge* impact on the performance of java
+calls using proxies.  If the type of the proxy cannot be directly
+inferred, it will use language reflection which is much slower.  With
+type hints, the calls become much faster.  
+
+** Type hints in Clojure
+Use the notation
+#+BEGIN_SRC clojure
+[^my-type my-var ^my-type2 my-var2]
+(defn draw [^java.awt.Graphics2D g2d] ...
+#+END_SRC
+to indicate the types java objects.  Note the =^type= notation This
+does not work for primitive types.  Annotations give the compiler
+enough info to get the right type and make appropriate calls without
+using heavy reflection which can greatly speed code.  Annotations
+appears to carry through macros as expected: types from outside the
+macro carry inside.  In some cases, the x For primitive types, use
+#+BEGIN_SRC clojure
+(int (/ width 2)) (double (/ height 2))
+#+END_SRC
+to coerce them 
+
+** Clojure is Fast
+Fractal Test
+| Depth | Ringo | RingoMod | Clojure | Clojure2 |
+|-------+-------+----------+---------+----------|
+|    10 |    70 |       35 |     167 |       12 |
+|    13 |   211 |      167 |     776 |       63 |
+|    16 |  1110 |      890 |    5078 |      211 |
+
+10000 * 2 drawLines()
+|          | Time |
+| Ringo    |  181 |
+| Clojure  |  762 |
+| Clojure2 |   50 |
+
+The Clojure2 is an updated version of the code which gives type hints,
+very limited code changes.  It is very fast, faster than the Ringo
+version.  Reflection was hurting performance badly and letting the
+compiler know to expect a Graphics2D object and casting certain
+arguments to ints allowed calls to be resolved exactly.  The
+translate() method of Graphics2D has both an int and double version
+which could not be resolved without reflection.  Casting using (int x)
+fixed this.
+
+** Undo and Functional Data structures
+I was considering how to get undo implemented in Meteo and the
+using Clojure would actually make this relatively straightforward as I
+could implement everything with functional data structures, i.e. no
+mutation.  According to clojure, a lot of its core datastructures are
+implemented in a way such that the supposed mutation is a low cost
+copy and modify.  Exploiting this would be simple as it would just be
+a matter of, when an action is performed, copy the old data structure
+onto an undo list and set the resulting data structure to the new
+state.  If the data is implemented properly under the hood, this will
+not take up too much memory, actions will not require explicit undo
+commands (no worries about screwing up state irreparably), and
+traversing the undo list is as simple as cycling list elements.
+
+** Clojure and memory
+It appears to be a big difference between implementations of java.
+The version I'm using on the laptop is the open java, 32-bit
+: phaedrus [meteo]% java -version
+: java version "1.6.0_20"
+: OpenJDK Runtime Environment (IcedTea6 1.9.7) (6b20-1.9.7-0ubuntu1~10.04.1)
+: OpenJDK Client VM (build 19.0-b09, mixed mode, sharing)
+while the school machine has a 1.6 version also but appears to be from
+sun and is 64-bit
+: java version "1.6.0_21"
+: Java(TM) SE Runtime Environment (build 1.6.0_21-b06)
+: Java HotSpot(TM) 64-Bit Server VM (build 17.0-b16, mixed mode)
+The amount of memory just to start the vm and load clojure is very
+different on these two versions:
+| Home | School |
+| 30MB | 77MB   | 
+Note sure what the sourece of this huge difference is, but worth
+keepin in mind.  Running jabref at school gobbles memory also, 271MB.
+
+* 05/04/2011 Wednesday
+
+** Recursion slow in Clojure
+Additional analysis by removing the main drawline() call from the
+below benchmark code indicates that it is in fact the recursive calls
+that are slowing clojure down badly.  I'm investigating the looping
+behavior. 
+
+** Looping slow in Clojure
+According to a looping test, clojure also suffers from slow looping
+speeds using their (dotimes) construct. 
+
+10000 * 2 drawLines()
+|         | Time |
+| Ringo   |  181 |
+| Clojure |  762 |
+
+Still not looking good for the Lisp.
+
+* 05/04/2011 Wednesday
+
+** Feeling lack of macros in javascript
+While playing with how to define a function with built in
+documentation, I encountered a relative impasse, mainly a limit of
+javascript's self-reference mechanism.  Anyway, this got me on a kick
+looking more powerful JVM language alternatives.  The most promising
+seemed to be Clojure.
+
+** Clojure explorations
+Spent some of today looking at whether Clojure might be a good
+language to use. It is a fully featured lisp that is implemented on
+the JVM.  Macros, meta information, and java interop are all
+provided.  However, this is a full lisp and I will take some real work
+to learn it.  Also, there are no tail call optimizations in the JVM so
+some hacks must be used to get recursion to work in some cases.
+
+** RingoJS
+An updated version of Rhino that appears to offer the newere syntax
+and some basic I/O facilities and module system support.  This is a
+good place to start as it seems to be actively developed and worth a
+look.  
+
+The modulre system can be used like this:
+#+BEGIN_SRC espresso
+timer=timer=require("ringo/utils/debug").timer;
+#+END_SRC
+which imports the a single function, timer (which is useful for timing
+a function). 
+
+** JavaAdapter
+For both Rhino and Ringo, the JavaAdapter constructor is what is used
+to get extend classes and inheritances.  For example
+#+BEGIN_SRC espresso
+pan = new JavaAdapter(javax.swing.JPanel,
+  {
+    paintComponent:function(g2d){
+      g2d.translate( width/2, height/2);
+      g2d.rotate(radians(-90));
+      draw(g2d);
+  }
+})
+#+END_SRC
+implements a subclass of javax.swing.Jpanel with the paintComponent()
+method overriden.  Sometimes this can be done with the new, but
+JavaAdapter appears to be more reliable as it does not require
+specific constructors for the class to be present.
+
+** Benchmark of Fractal Tree, RingoJS vs Clojure
+Found a simple fractal tree drawing code for clojure [[http://www.curiousattemptbunny.com/2009/01/simple-clojure-graphics-api.html][here]] and ported
+it with just a little trouble.  I varied the complexity of drawing by
+varying the depth of the fractals.  This led to quite a performance
+disparity between Ringo and Clojure.
+
+| Depth | Ringo | Clojure | RingoMod |
+|-------+-------+---------+----------|
+|    10 |    70 |     167 |       35 |
+|    13 |   211 |     776 |      167 |
+|    16 |  1110 |    5078 |      890 |
+
+In both cases, sometimes several redraws were triggered so multiple
+drawing events took place.  This will require greate speed from the
+drawing implementation.  It seems that Clojure is clearly slower.  The
+java interface must be heavier than the Ringo version.  The
+modification which led to some speed gains in Ringo simply replaced a
+wrapper over the radians function
+
+#+BEGIN_SRC espresso
+// Slower
+function radians(degrees){return java.lang.Math.toRadians(degrees)}
+// Faster
+radians = java.lang.Math.toRadians;
+#+END_SRC
+
+Neither code appears to be affected much by the size of the drawable
+area as doubling the size of the drawable area seemed to have no
+effect on run times.
+
+** Dismissing Clojure
+The case for clojure is
+- Lots of progamming language features built in
+- May make development a bit faster as a solo effort
+- Might lead to a better over look/feel of code
+- Looks/acts more like emacs
+
+The case against
+- Java interface speed appears to be an issue, though this could be
+  remedied by further study of the proxy construct for extending
+  classes
+- Will alienate a lot of potential developers by going this route
+- Missing the nice javascript/XML syntax for manipulating data
+- Tied to JVM as it is not likely that there will be much chance
+  Clojure will be available for Qt or Gtk anytime soon
+
+Thought it would be fun to program in Lisp, I'll for now ere on the
+side of inclusiveness for the time being and revisit this decision
+once things become more apparent.
+
+** Music Wrapper
+I may want a simple container-type data structure in my music
+implementatation to hold measures and can have a new time signature,
+key signature, instrument, or other type of change (perhaps a 1st
+ending) which are not necessarily easily represented otherwise.
+
+** Duplets
+I'll still need to decide upon a logical representation of duplets.
+This will be a bit tricky, but then the whole time signature/note
+length thing is tricky.
+
+* 04/27/2011 Wednesday
+
+** Design Decision: Javascript and Rhino
+I've decided that I'll be working with Rhino for the initial pass at
+Meteo. Here are some notes on the final call.
+
+*** Advantages
+- Java as the implementation means garbage collection is always going
+  to be there making life a lot easier
+- Java has good GUI and drawing capabilities and excellent docs on
+  both
+- Rhino has a *very* direct connection between javacript and java
+  - Classes are exposed and method/properties are enumerable with the
+    for..in syntax of java, good for exploration
+  - The package system is there making finding classes easy
+- Rhino has E4X (see below), direct coding of XML in javascript-like
+  syntax 
+- Should benefit from the cross-platform nature of java
+- Good prep for teaching Java next fall
+- Using Rhino gives a very good way to experiment between
+  front/back-end code behavior.   If I decide to change back ends,
+  only the back end interfaces will have to change
+  - Front end - the API that will be officially scriptable, hopefully
+    most of the program
+  - Back end - where Java comes in to provide file access, drawing,
+    and GUI 
+- Rhino can compile javascript code to java classes directly,
+  potentially improving performance without the need to implement
+  logic directly in java.  This is a good analog for byte-compile
+  emacs code
+- There are some Java sound capabilities that might make it possible
+  to quickly incorporate sound output.
+
+*** Disadvantages
+- The memory footprint will be perhaps heavier than a lower-level
+  implementation like Qt or direct library use. Rhino itself starts
+  using about 16.7M.  Loading a single Swing
+  (examples/SwingApplication.js) window bumps this to 37.5M.
+  Additional windows take about a 0.5MB per call.
+- Not going to get Cairo which apparently has good rendering and
+  convenience along with performance.
+- The drawing may be screwy if the java programs I've used are any
+  indication - will have to be careful as I develop
+- Javascript's program model and scoping are a lot screwier than Lua's
+  which will make it a little weird to use
+
+** E4X
+A really cool way of embedding XML in javascript directly.  It looks
+like a joy to work with as the datastructure manipulated in a similar
+fashion to regular javascript objects.  The Mozilla tutorial is here:
+https://developer.mozilla.org/En/E4X/Processing_XML_with_E4X
+
+** Basic objects
+I'm going to need to start collecting the basic objects required for
+the implementation of meteo.  Things like file access are no provided
+by javascript directly.  As a first pass, I'll likely want to use
+javascript to create the notion of a class which just wraps some java
+functionality.  As needed, we can convert these to java classes.  All
+of this stuff will be on the back end side with a javascript face.
+Thus, if down the line I change to a different back end, Qt or web,
+then we'll just need to change the back end code out and the front end
+should be relatively stable.
+
+** javac - compiling with jars
+A few commands to keep in mind when dealing with jars and java
+compilation.
+
+| js.jar            | Java notion of library/archive, this one has Rhino in it                 |
+| CLASSPATH         | Env var, semi-colon separated list of directories and jars for libraryes |
+| -cp or -classpath | Option to javac which allows setting classpth                            |
+| javac -cp js.jar  | Compile with Rhino's library included                                    |
+| jar tf js.jar     | List contents of a jar file                                              |
+
+** Working with MusicXml and E4X
+The model laid out by musicxml is going to be a pain to work with
+directly because it has a lot of redundant information even in the
+simplest setups.  For instance, there is both a duration (e.g. 1,2,3)
+and type (e.g. half/whole) to describe note length.  This will be a
+pain to work with.
+
+I will need to start pouring over the musicxml specs to understand
+what a lot of the seemingly superfluous tags might be.
+http://www.recordare.com/musicxml/tutorial
+
+** Notes on MusicXML
+I am making a study of musicxml to see it's model for music data.
+Made it through about page 34 of the musicxml tutorial to learn about
+some of its features.  Notes are below
+
+*** Part vs. Time 
+There are apparently two XML formats, score-partwise and
+score-timewise which differ in whether they arrange by parts or
+time/measures.  That is, the first has measures inside parts while the
+latter has parts inside measures.
+
+*** ~<attributes>~
+Within a part (or measure) the ~<attributes>~ tag shows up firts.  This
+is where time and key information get put.
+
+Follows MIDI in that there are ~<divisions>~ which are the number of
+pulses per quarter note(?)  which is apparently the shortest length
+allowable for a note.  A division of 24 allows sixteenth or triplet
+rhythms. The time signature is specified in a more straight-forward
+fashion with
+#+BEGIN_SRC xml
+<time symbol="common">
+  <beats>4</beats>
+  <beat-type>4</beat-type>
+</time>
+#+END_SRC
+for common 4/4 time.  See later discussion of note durations for more
+on this.
+
+Key signature is specified with
+#+BEGIN_SRC xml
+<key>
+<fifths>-3</fifths>
+<mode>minor</mode>
+</key>
+#+END_SRC
+for F minor fairly easy to follow.
+
+Multiple staves can be specified with ~<staves>~ for a particular part.
+
+Clef is specified here with ~<clef>~.  This has both a ~<sign>~ (G for
+treble, F for bass) and ~<line>~ for where the clef lives (2 for treble,
+4 for bass).  For multiple staves, multiple clefs must appear with a
+number="1" attribute for which staff the clef corresponds to.
+Wikipedia has a good article on clef names, but will probably not need
+to worry too much about this, just get bass, treble, and alto later.
+
+This is also where transposition information is stored.  There are
+fields for both playing transposition and writing transposition,
+diatonic and chromatic.  Pay special attention to transposition
+information - when doing a layout, showing the score layout is one
+thing, possibly done in either concert or transposed key, but the part
+layout will need to be done in transposed layout.  If we are going to
+model the parts effectively in one data structure, we'll need to track
+layout annotations in several contexts.
+
+*** ~<note>~
+Notes are contained in ~<note>~ tags.
+
+~<pitch>~ gives pitch information, inside it are: ~<step>~ gives the
+line - A,B,..,G, ~<alter>~ the flat/sharp (+/-2 for double sharp/flat),
+~<octave>~ the octave of the note, 4 for middle C.  Note that the
+enharmonic is specified for display, but this may not be the best
+representation for comutation.
+
+~<duration>~ gives number of pulses, quarter note pulses are from
+~<divisions>~ in attributes.  There is also a ~<type>~ element which
+specifies quarter, half, etc.  This is to enable display of one type
+versus playback in a swing style or other inferred rhythmic
+variation.  This is actually sort of prickly issue which I'll want to
+attend to.  My representation will need to deal with these issues as
+well, but playback duration can be a different issue.
+
+In addition to this, there is ~<time-modification>~ for duplet/triplet
+rhythms.  From the example
+#+BEGIN_SRC xml
+<time-modification>
+  <actual-notes>3</actual-notes>
+  <normal-notes>2</normal-notes
+</time-modification>
+#+END_SRC
+gives a standard triplet, but this is dependent upon the context.
+Additionally, to specify something like a quarter-eighth triplet, more
+convolutions are needed:
+#+BEGIN_SRC xml
+<type>quarter</type>
+<time-modification>
+  <actual-notes>3</actual-notes>
+  <normal-notes>2</normal-notes>
+  <normal-type>eighth</normal-type>
+</time-modification>
+#+END_SRC
+
+This follows the model that I was looking at where we have playback
+and display information separate, but it looks a difficult to parse
+through.  Need to strive for something uniform and elegant here.  Keep
+in mind we'll want to generalize to potentially any duplet value (5/1,
+5/2).  This will be difficult.  Recall lilypond's approach was
+something like setting up a temporary time context.
+
+A rest is given with ~<rest/>~ and a ~<duration>~ is specified.
+
+A tie is specified within a note, ~<tie type="start">~ and ~<tie
+type="stop">~, in reverse order for notes that are both.  There does
+not appear to be a notion of a "target" for a tie which is
+troublesome. 
+
+Note stems are specified with ~<stem>~ and can be either up or down, not
+sure if it is required element.
+
+Note beams are specified with
+#+BEGIN_SRC xml
+<beam number="1">begin</beam>
+#+END_SRC
+
+where the number attribute determines the "level", 1 for eighth, 2 for
+sixteenth, etc.  The text in the element is one of begin, continue,
+end, forward hook, and backward hook.  These will probably be optional
+attributes in my note model.  There will be some global options
+defining how eighth and lower beams are treated with annotations
+similar to this to further specify rendering.
+
+
+A ~<staff>~ can also be specified which indicates which staff the note
+is targetted to land on.  This enables cross staff notation but will
+be somewhat difficult to translate to internal data structure
+representations.
+
+Lyrics are included in a ~<note>~ with ~<lyric>~, but I will ignore those for now.
+
+*** Chords and Voices
+Also part of ~<note>~ are some additional features for logical grouping.
+
+~<voice>1</voice>~ is a logical device used to indicate a note should be
+grouped with some other notes.  In the examples given, this seems a
+substitute for either layers or chords.
+
+A chord is specified by using a ~<chord/>~ tag within a note.  This
+"backs up" the counting mechanism normally specifying a subsequent
+time position for a note.  This is a little gross as the notes in a
+chord must all agree on the duration or the counting mechanism will
+become screwy.  For internal representation, I'll probably want to use
+a chord element with a single duration and potentially multiple
+pitches.  Multiple voices will be used to do differing durations. 
+
+*** Forward and Backup
+Within a measure, the position in time can be further manipulated with
+~<forward>~ and ~<backup>~ which both take a duration element.  This adds
+a order-dependent aspect to musicxml which is a bit gross.  The XML is
+a recipe, but must be followed in order to accurately output the
+elements. 
+
+In terms of my own representation, this is not desirable.  What is
+probably a better idea is to use some sort of absolute offset from the
+beginning of the measure to represent a note/chord's timing
+information.  A data structure that contains the notes/chords in order
+of offset from the beginning will facilitate display and traversal.
+
+Granted, I will probably want to be able to rely on parts appearing in
+order in the datastructure representing the score, but the temporal
+aspect of the musicxml layout mechanism looks very difficult to deal
+with. 
+
+** Design of layers/chords
+I'll probably start my internal representation in XML and follow the
+model that I recall from Finale.  This was the ability to specify
+chords, multiple notes linked together with the same duration, and
+layers which represent independent lines in a staff.  Single notes are
+just one-note chords.  This will mean the hierarchy is something like
+
+: part -> staff -> measure -> layer -> chord -> notes
+
+Bulk operations will be a little hard to logically organize with
+layers, but can implement options here: use keystrokes to quickly
+switch between layers, copy/paste works on all layers by default, can
+specify individual layers if needed.
+
+** Point/Mark behavior
+When we get the interactive part, the point will represent a position
+between two of absolute positions in a measure as will the mark.
+Point and mark may also need to contain part/staff information so that
+multiple staves can be copied and pasted, transposed, etc.
+
+** Capella
+Recordare, the company partly responsible for the musicxml standard,
+has their own software, capella, which might be worth a look as they
+claim that the pc keyboard is used for editing.
+
+* 04/22/2011 Friday
+
+Rhino is really looking attractive as a platform.  It has exactly what
+I am interested in for development: REPL with full access to the whole
+Java platform through javascript.  It's as simple as running a jar
+from java to get started and loading some scripts.  Been looking and
+messing with their swing application and it appears to have full
+introspection of java objects through the "for(v in obj){}" syntax.
+Awesome.
+
+The next step is going to be to explore a little drawing with it using
+Java2D, need to find a complete example which allows me to specify a
+drawing area to play with: this may be a start
+http://www.cs.ucl.ac.uk/teaching/D0a1/additionalnotes/SimpleDrawing.html
+
+Already able to do this with something akin to
+
+: f = new frame()
+: g = f.getGraphics()
+: g.drawLine(0,0,300,300) ;
+
+Easy as pie.  There even prototypes avaible:
+
+: js> g.drawString
+: function drawString() {/*
+: void drawString(java.lang.String,int,int)
+: void drawString(java.lang.String,float,float)
+: void drawString(java.text.AttributedCharacterIterator,int,int)
+: void drawString(java.text.AttributedCharacterIterator,float,float)
+: */}
+* 04/18/2011 Monday
+
+** Reflection in javascript
+It appears that reflection works fine in Javascript, just use "this"
+in the global context to refer to a global symbol.
+
+qs> for(var v in this){ print(v); print(this[v])}
+
+Unfortunately in qtscript, this does not display the globals I had
+hoped: Array, String, etc. are all still hidden.
+
+* 04/03/2011 Sunday
+
+Successful compile of libqtlua.  Did this simply by eliminating the Qt
+version checks in the appropriate files.  Everything appears to work
+correctly, including the qtlua shell.  
+
+qtlua shell has some peculiarities, print() seems to include quotes,
+but that is only a small issue.  Have been looking at how it works on
+the C++ side to see if I can get an idea of how to integrate.
+
+[[file:packages/libqtlua-1.2/tools/qtlua/qtlua.cc::][Source for qtlua.]] 
+
+Looking at the examples in the console directory, particularly
+[[file:packages/libqtlua-1.2/examples/cpp/console/console_fcn.cc::][console_fcn]] to get an idea of how lua and Qt talk to one another.  To
+add a function, implement an instance of QtLua::Function and register
+it with the Lua state.
+
+There is an interesting illustration of a tree view of the namespace
+in Lua which appears more powerful than the whos() function which I
+typically implement.  It is [[file:packages/libqtlua-1.2/examples/cpp/mvc/tabletreeview.cc][here.]]
+
+There is an added builtin function, each(), that luaqt adds which
+works just like the pairs() function for iterating over tables.
+
+* 03/30/2011 Wednesday
+
+Successful install of Qt 4.7 SDK, adjusted path of shell to reflect
+this.
+
+Working on the qscript interpreter example in file:~/devel/qscript.  
+
+Javascript does not provide direct access to the global object
+(e.g. the global namespace) but this was easy to add on the C++ (right
+now assigned to "G").
+
+Right now my biggest gripe is that for javascript objects, there all
+the properties are not listed.  For example, creating an a array with
+
+var a=new Array(1,2,3)
+
+then trying to enumerate the properties with 
+
+for(var v in a){print(v)}
+
+gives only 0,1,2.  This will be a problem as it will make it
+impossible to keep proper track of what kind of thing the object is, a
+major disadvantage as compred to Lua's tables which are for more
+transparent.  Unless there is a way around this, I'm not sure that
+javascript will be a good choice.
+
+However, getting libqtlua to compile has not succeeded yet.
+
+* Old
+** Framework
 
 When I get to writing the music software, the available framework
 could probably go something like this.
@@ -41,21 +646,21 @@ function for that purpose.  Firefox reserves most single key strokes
 for typing as it does not adjust the key map to different situations
 (text box, address bar, body of web page), at least not over much.
 
-* Other Tools of interest
-** Canonrus
+** Other Tools of interest
+*** Canonrus
 Music notation program, allows ruby/python scripting interface
 http://canorus.berlios.de
 
-** Snd
+*** Snd
 waveform analyzer, allows scheme, ruby, and forth scripting.
 Interface is intentionally similar to emacs
 https://ccrma.stanford.edu/software/snd/snd/snd.html
 
-** Cameleon
+*** Cameleon
 Ocaml text editor which has a lot of emacs-like features already built
 
 
-** Gsharp
+*** Gsharp
 http://common-lisp.net/project/gsharp/
 
 This is a common lisp-based notation program which uses a McCLIM (an
@@ -69,27 +674,27 @@ described in the ending (page 73) of the PS manual.
 There is a discussion of the algorithm used for beaming in the manual,
 appendix B and discussion of placement of accidentals in appendix C.
 
-** Seed
+*** Seed
 http://live.gnome.org/Seed
 
 A GTK scripting implementation of javascript, allows dynamic binding
 to new GTK objects through some sort of introspection deal.
 
-** A potentially good combination
+*** A potentially good combination
 Steal the UI of Cameleon for managament, enable note buffers usinge
 Cairo's ocaml interface (pretty good, in ~/packages) and run ocs as
 the embedded extension language.  I would probably need to transfer a
 a lot of control from Cameleon2 
 
-** PXP
+*** PXP
 An interesting XML library for ocaml which allows automatic parsing
 and also mirroring the XML classes as other classes with additional
 functionality. 
 
-** Wikifonia
+*** Wikifonia
 A great place to search for free lead sheets
 
-** Lilypond
+*** Lilypond
 It looks like there are a lot of functions in
 lilypond/scm/output-ps.scm which create postscript drawing
 instructions for various objects.  So at some point in the lilypond
@@ -111,7 +716,7 @@ to one another: for instance Accidental_interface, Accidental_entry,
 Accidental_engraver, Accidental_placement.  It may be sort of lost
 cause to understand their approach as it is very complex.
 
-* Software Design
+** Software Design
 Spent some time reading Steve Yegge's post on properties of good
 software.  The idea of a "living" piece of software is a good thing to
 abide by, that restarting is more or less equivalet to killing the
@@ -209,7 +814,7 @@ does not really allow for this to happen to due to limitations in the
 macro system.  Lua is much mor appropriate for this but it means I'd
 have to roll my own interpreter.
 
-* Interpreters
+** Interpreters
 
 There is a paper by Nick Benton, "Embedded Interpreters," which
 discusses some of the issues for gluing implementation and object
@@ -220,7 +825,7 @@ Norman Ramsey wrote a number of papers on embedding Lua in Ocaml.
 http://www.cs.tufts.edu/~nr/
 
 
-* Two Libraries
+** Two Libraries
 There are essentially then two libraries that I would need to create
 which interfaced with Lua.  
 
@@ -237,7 +842,7 @@ The second library is a basic editor/gui library which people can plug
 things into.  Again, primitives in a host language with hooks back
 into the embedded language.
 
-* An implementation of Lua
+** An implementation of Lua
 It would have to definitely have
 - Tables
 - Metatables
@@ -256,7 +861,7 @@ me test some ideas to begin with.  Valgrind will help with the
 inevitable memory problems.  Writing in C may also help me to utilize
 some pre-existing code from lilypond.
 
-* Layout Problem
+** Layout Problem
 
 I spent some time looking at the Lilypond website and reading there
 code.  The essay was particularly interesting as it discussed the
@@ -288,10 +893,10 @@ be onerous.
 To enable hackability of these functions, they need to be reasonably
 accessible from the embedded language (scheme/lua).  This will allow a
 lot of things to be tried in a scriptable fashion and then ultimately
-translated into the underlying implementation language (software ->
+translated into the underlying implementation language (software \to
 hardware transition).
 
-* The Model
+** The Model
 
 Lilypond makes an interesting point in that the notion of a
 hierarchical view of notation has some limitations, especially for
@@ -319,14 +924,14 @@ stems, beams, and slurs all happen after that.
 The question is, how does one implement this in a sensible way for an
 interactive, keyboard driven GUI?  No answers at this time.
 
-* Haskell?
+** Haskell?
 
 There are some interesting bindings available for Haskell which might
 make it fun to try programming.  There is a good looking Lua interface
 and a GTK binding with some Cairo support, though it does not look
 like PDF support is present at this point.
 
-* Plan
+** Plan
 The thing to do is to start small.  The first goal will simply be to
 design a small Ocaml library for rendering notation using Cairo.  I
 can worry about GUI and extension languages later, but having a few
@@ -341,7 +946,7 @@ This will also force me to start setting up clear boundaries between
 drawing functions, music abstractions, and the ultimate user
 experience. 
 
-* Representations
+** Representations
 The most basic representation is that of the logical musical elements:
 staff, clef, notes, slurs, etc.  Call this the logical level.
 
@@ -376,7 +981,7 @@ at the measure or staff (group) level of individual staffs to indicate
 that when they are being viewed in a reduced setting, there should be
 system breaks at the defined positions.  
 
-* Design using Cairo
+** Design using Cairo
 I played around with some of the ocaml-cairo bindings and found that
 drawing from a gtk surface to a pdf surface does not result in very
 nice looking stuff.  With that in mind, I'll need to write code that
@@ -389,13 +994,145 @@ to add gtk widgets and get callbacks to work pretty quickly.  That
 bodes well for the eventual GUI design.  But first, library layout
 stuff. 
 
-* Threads
+In testing, I have figured out that what essentially there needs to be
+a 'render' routine which will take a cairo device, do the drawing, and
+then finalize the surface.  The device may be a GTK drawable area or a
+PDF surface for output.  This keeps the path information so that the
+output looks the same between them.
+
+** Threads
 Take a look at the Ocaml thread library for potential means of
 branching rendering or layout optimization off.
 
-* Glue between Scheme-Ocaml
+** Glue between Scheme-Ocaml
 Designing the library, I should probably start off pretty early
 thinking about the scheme representation of the underlying hardware.
 It seems that there are some advanced features in slib which include
 syntax-case which, if we could get it to run with ocs, it would be
 useful for developing packages.
+
+** Working with lablgtk and cairo-caml
+- Make sure to include the module lablgtk2.init
+- It appears that the gtk widgets must be "shown" before a child cairo
+  rendering context is allocated.  It also appears that this context
+  must be continually gotten again with Cairo_lablgtk.create.
+  According to the gdk-cairo interaction website, this is due to
+  double-buffering issues: "Note that due to double-buffering, Cairo
+  contexts created in a GTK+ expose event handler cannot be cached and
+  reused between different expose events."
+  http://library.gnome.org/devel/gdk/stable/gdk-Cairo-Interaction.html
+- In the ubuntu package for cairo-caml, there is no support for pango
+  so I compiled the source version and extracted the pango parts into
+  it's own little packge which I installed using ocamlfind.  It looks
+  like this:
+
+: $> cd ~/packages/caio-caml
+: $> sudo ocamlfind remove pango-cairo
+: $> sudo ocamlfind install pango-cairo *
+: $> sudo chmod a+rX -R /usr/lib/ocaml/
+
+** Pango blues
+It appears that there is no ability to load new fonts using the pango
+interface to ocaml available in lablgtk.  This might not be too bad
+because it's not too bad to install fonts in the current ubuntus and
+there are a couple options for music fonts, particularly ntedfont from
+nted.  For now I will work with this.
+
+Using the ubuntu character map is useful for determining which
+character is which.
+
+The following is a python example of how to load a font and use it.
+This may be useful should I need to roll some Ocaml-c glue to load
+fonts. 
+http://cairographics.org/freetypepython/
+
+** Glade
+Glade is proving fairly useful for putting together a simple GUI.
+There is a tool in lablgtk called lablgladecc2 which compiles the
+saved result of a glade project and converts it into an Ocaml module.
+This will make testing a lot easier.  
+
+There is one bug however: for text inputs, the circle 'invisible'
+text is not parseable by lablgladecc2, just set it default (right
+click and select default which is an asterix).
+
+** Lablgtk and drawing_area - redrawing
+In order to get redrawing on a redrawing area, the need routine is
+well hidden (i.e. not locatable) in the documentation for lablgtk.  It
+is done with:
+:   GtkBase.Widget.queue_draw (area#as_widget)
+
+I stumbled on it in an explanation of cairo multithreading here:
+http://cairographics.org/threaded_animation_with_cairo/
+There is some advanced discussion of using alarms for efficient
+drawing.
+
+** Linked values
+It would be nice if there were a way to use global variables that are
+tied to gui elements, it that if the variable is changed, they signal
+other objectives of their change to other tied objects.  Smalltalk
+style, right?  Not sure how to do this in a simple way.
+
+** Next steps
+I have gotten a better understanding of how lablgtk and cairo
+function.  I've also kind of figured a few things out about text.  The
+next step will be to start getting size information for text using the
+Pango interface.  This will allow me to properly place a few objects
+on a staff to get a feel for what's involved.
+
+May have to use a transformation matrix in Cairo to do scaling as it
+doesn't seem that there is an easy way to set the 'extents' of text
+through Pango.
+
+** Switching to Lua
+I think I will probably make the switch to developing in pure Lua for
+a while to see how it would look to work with the dynamic language.
+It appears that there is a mature set of gnome bindings and also a
+mature cairo interface.  I need to download and compile the latter
+while the former has an ubuntu package.  However, I think the gnome
+package is broken, no gtk.so for lua, so I may have to compile for
+source. 
+
+The reasons for this switch are that I would like to have a scripting
+interface at some point and Lua is a good choice for this according to
+everything I've read so far.  It uses the Properties Pattern with its
+tables which Steve Yegge and others have lauded in javascript and lisp
+(property lists in lisp).  It has a clean syntax and interfacing with
+the external libraries should be pretty straightforward.  I also like
+the module capabilities which seem simple but flexible (not as
+powerful as Ocaml certainly, but what is?).  
+
+I don't want to fall victim to premature optimization by picking Ocaml
+as it is a lower level language than Lua so I'll see what comes of
+this effort.  For certain almost any C library can be put into Lua
+easier than Ocaml.  That may be a big help later. 
+
+** Cairopad
+This is another project done by the author of luacairo and it is
+excellent.  It provides a live means of testing cairo drawing with
+lua.  It gives me just about everything I need to starting developing:
+a gui, lot of examples for using cairo with lua, and some great
+framework for interfacing lua with C and with wxwidgets for cross
+platform gui development.
+
+** Logic of Chords/Lyrics
+Treat chords and lyrics as another 'voice' to be added to a particular
+part - their display mechanism will be different in that they get put
+above/below the staff.  But other than that, they will have their own
+keymap for input, objects in them will have not durations and rests,
+possible playback, etc.
+
+** QT for GUI
+I have started looking at QT as a possible means of doing the GUI part
+of the development.  This would be nice as it is cross-platform, more
+modern C++ thatn gtk, has mature tools, and is relatively recently
+been completely GPL'd.
+
+There is a built-in QTscript which is a ECMAscript (javascript)
+implementation which would be great for extensibility.  
+
+There is also a qt-lua project but does not seem to have updated to
+the most recent version of QT (4.6, last working version was 4.5 for
+qtlua). 
+
+
