@@ -4,6 +4,11 @@
 
 * 05/06/2011 Friday
 
+** Github
+Set up git and github so that I can get code too and from school/home.
+This does not look like it will be too tough to work with especially
+with the emacs version control front-end.
+
 ** Reflection warnings
 I have been experimenting a bit with trying to bind
 =*warn-on-reflection*= to only affect certain codes, but this does not
