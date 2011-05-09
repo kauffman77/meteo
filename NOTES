@@ -2,7 +2,87 @@
 #+STARTUP: showall
 #+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/09/2011 Monday
+
+** Feta vs Emmentaler
+Looks like lilypond uses the following fonts
+
+| feta       | Type-1 .pfb | notation, some text |
+| parmesan   | Type-1 .pfb | old-style notation  |
+| emmentaler | OpenType    | both fonts packaged |
+
+I'll want to use the emmentaler font according to discussion of names
+and external resources [[http://lists.gnu.org/archive/html/lilypond-devel/2009-05/msg00222.html][here]].
+
+** Font Types
+There are 3 main types of fonts: Type-1 from adobe, TrueType form M$,
+and OpenType which was collaborative but it appears to be more a
+descendant of TrueType.  All of then can be manipulated with
+=fontforge= (installed now) to view and get character sets.
+
+According to the display it gives, each of the glyphs in the font has
+a unicode code and some sort of common name.  Haven't been able to
+figure out how to access the glyphs based on common name yet, but
+will be able to use the unicode glyphs.
+
+** Java Font Handling
+It looks like java 1.6 handles OpenType, emmanteler, just fine, so
+I'll be using that for preliminary work.  Just treat it like a
+truetype font for the =creatFont()= call flag.  Fonts must be created,
+the graphics object set to the font, then the string drawn.  When
+creating fonts, a static method is used and a new font must be derived
+from it to get a different size.
+
+Some code to demonstrate this is in [[file:trialcode/fonts.clj::import%20java%20io%20File%20java%20awt%20Font%20java%20awt%20RenderingHints][fonts.clj]].
+
+** Scrolling
+[[http://download.oracle.com/javase/tutorial/uiswing/components/scrollpane.html][This link]] gives some information on the use of scrolling panes in
+java.  It is fairly low level, but may be worth a look, particularly
+the circle example as it also overviews packing and mouse events
+briefly. 
+
+Have a look at the [[http://www.manageability.org/blog/stuff/open-source-structured-graphics-libraries-in-java][libraries listed here]] for some leads on how to make
+graphics drawing a little easier in java.
+
 * 05/06/2011 Friday
+
+** Design Thoughts
+Reviewed my design doc on the models required to make meteo run.  I
+had laid this out into three basic categories.
+
+- Music Model: the logical data structure which represents the
+  elements that can be edited and manipulated by the user.  These are
+  staves, notes, lyrics, etc.
+- Constraint model: the logical elements are parsed and additional
+  objects are created, for instance accidentals and key/time
+  signatures at the beginnings of systems.  These are all items that
+  appear in the layout model but do not have coordinates assigned.  In
+  addition, constraints on the positions of objects wrt one another
+  are given.
+- Layout mode: the result of applying the layout optimizer to the
+  constraint model.  This has the objects in the constraint model with
+  coordinates assigned to them.
+
+The above breakdown does not decide things like when to break
+systems.  This is a little prickly because 
+
+1. Deciding a priori when to break constrains the optimizer a lot
+2. Allowing the optimizer to decide when to break means new objects
+   (staff/key signature) get introduced during optimization which
+   could have bad effects.
+
+I'll need to think a little more about how to do this properly.
+
+** Clojure and classpath
+Been reading about clojure and java's classpath and things are not
+encouraging.  Ideally I'd like users to be able to easily load their
+own code from wherever, but it appears that this is greatly impeded by
+the classpath.  Classpath is not meant to be changed at runtime and it
+seems clojure will only let stuff be loaded using =load= if it is in
+the classpath.  This is slightly bad as there is no sane way to change
+or add or modify the classpath.  This might not be too bad as I'll
+probably just want to implement my own load which simply reads in
+clojure sources and evaluates them according to a user-defined 
 
 ** Github
 Set up git and github so that I can get code too and from school/home.

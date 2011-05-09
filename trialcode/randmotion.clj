@@ -31,5 +31,3 @@
   (.setSize width height)
   (.show))  
 (println "\n\nStarting up" (.getTitle frame) "\n")
-
-	
