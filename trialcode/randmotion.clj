@@ -17,7 +17,7 @@
     (doto g2d
       (.rotate (randang))
       (.drawLine length 0 0 0)
-      (.translate length 0))))
+      (.translate (int length) (int 0)))))
 
 (def frame (new JFrame))
 (def panel
