@@ -2,6 +2,152 @@
 #+STARTUP: showall
 #+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/12/2011 Thursday
+** Leiningen
+I installed leiningen at school, needed for slime interaction. Set
+=LEIN_HOME= to scratch space for now and put it on the path.  Set up
+swank, the slime interface to clojure, with
+: lein plugin install swank-clojure 1.3.0
+Start it with
+: swank-clojure
+
+** Inferior lisp
+Set up run-lisp to work with clojure, just modified the
+=inferior-lisp-program= to clj.  Don't have a eval buffer, but can
+probably get that.
+
+I got =slime= to run and it contains a ton of useful features, macro
+expansion, some debugging, etc.
+
+The basic setup is 
+
+
+** TODO Experiment with fonts/rendering
+
+** Require and renaming
+Still trying to get my head around require/use etc but it appears that
+the following imports a library with a new name.
+
+#+BEGIN_SRC clojure
+(require ['clojure.zip :as 'zip])
+#+END_SRC
+
+** Mark behavior
+I'll need to consider the behavior of marks very carefully: they are
+good until the data structure is modified, then using zipper as mark
+will no longer match the current state.  Potential solutions
+- Search for proper position
+- Update marks as score is updated
+- Invalidate marks
+
+[[http://www.gnu.org/software/emacs/manual/html_node/elisp/Overview-of-Markers.html#Overview-of-Markers][Looking at how emacs does this gives]]:
+#+BEGIN_QUOTE
+Insertion and deletion in a buffer must check all the markers and
+relocate them if necessary. This slows processing in a buffer with a
+large number of markers.
+#+END_QUOTE
+
+So, there isn't as elegant of a solution as I thought.  There are a
+ton of functions associated with insertion, but it boils down to
+functions in the emacs source in src/insdel.c which, on each
+insertion, iterates through the marks and updates their actual
+position to reflect the new state of the buffer.  I could replicate
+this for a zipper structure, but I'd to think of how to update paths
+effectively.  Also, this may not be the best way to update with the
+additional information available in a zipper.
+
+This is actually much trickier than I originally thought and concerns
+the mark as well as other markers.  Making updates to the data
+structure in a functional way will mean the data structure pointed to
+by the mark becomes invalid entirely: the score datastructure will
+have changed.  This will require some sort of update to get the mark
+rectified. 
+
+** Point seems to work
+I have been playing with the zipper representation of points in
+file:trialcode/notes.clj and it seems to work fairly well.  The timing
+seems a bit unpredictable, the first few iterations of the test code
+seem to take a while longer than subsequent approaches.  At any rate,
+this is viable and something that I'll probably use as a first pass.
+
+** Logical and layout
+To facilitate editing pieces, we'll want to use some sort of link
+between the logical and layout representations of the music.  When the
+logical structure changes, the corresponding piece of layout will also
+need to change.
+
+If we have a monolithic data structure for the score, this will
+prevent any issues with 
+
+** Record and defrecord
+Records are apparently a more efficient way to implement object-like
+maps.  =defrecord= sets one up, but to include functions, one must
+define a protocol.
+
+#+BEGIN_SRC clojure
+(defrecord note [len pitch])		;Simple record
+(def n (new note :whole 'a))		;Construct a note
+(def n (note. :whole 'a))		;Alternate constructor notation
+(:len n)				;Acces len
+(:pitch n)				;Acces pitch
+;; Full map interface to create new, note it's function though so must
+;; save the modification somehow
+(assoc n :staccato true)
+;A protocol, methods, takes object as first arg
+(defprotocol P (dur [this]))		
+
+(defrecord note [len pitch]		;A record implementing the protocol
+  P
+  (dur [this] (len-dur len)))
+#+END_SRC
+
+** .emacs update
+Need to get code for org-mode examples into my school .emacs.
+
+* 05/11/2011 Wednesday
+
+** Undefine with ns-unmap
+: (ns-unmap *ns* 'mysym)
+
+** Care with load vs load-file
+Most of the time I should be using =load-file= as =load= appears to
+note reload changed files, just reloads compiled code which does not
+reflect source changes.
+
+** Zipper and location
+I've started studying the zipper, an augmentation for data structures
+(like lists and trees) that allows a location to be kept and edits to
+be made in an efficient, funcitonal manner.  This ties to the my
+earlier ideas on using functional data structures to avoid the need to
+implement undo for stateful objects.
+
+http://clojure.blip.tv/file/4503162/
+This video mentions use of zippers to do document editing storing the
+state as a zipper allowing easy undo/redo.
+
+Zippers also may give a great way to store marks in a marklist.  A
+zipper is a location and a datastructure and can be stored.  However,
+since the present state of the datastructure may be different, this
+may not work the way that I hope.
+
+Note that the zipper is apparently a generalization of a *gap buffer*
+datastructure which is what is used in emacs to represent buffers.
+
+** References, Agents, Atoms
+Trying to read through the clojure docs on these three to get a sense
+of what is possible.  They will be essential for doing asynchronous
+updates of the display as a data structure changes.  Agents will
+probably be a good idea for most data like the score, the point and
+mark, the layout, as =send= can be used to update them with commands
+and =add-watch= can be used to implement updating without needing to
+signal it explicitly.  There are also facilities to validate agent
+state which may be of use.
+
+** Igor Engraver
+I was poking around a lisp site and saw Igor Engraver mentioned as an
+application employing lisp.  This is a fairly full-featured notation
+software worth a look, though it seems to have fallen off development.
+
 * 05/09/2011 Monday
 
 ** Feta vs Emmentaler
