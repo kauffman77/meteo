@@ -44,6 +44,12 @@ briefly.
 Have a look at the [[http://www.manageability.org/blog/stuff/open-source-structured-graphics-libraries-in-java][libraries listed here]] for some leads on how to make
 graphics drawing a little easier in java.
 
+** Git Commands
+I have git set up right now so that emacs works reasonably well with
+it.  The following must be run from a shell though
+| git push origin master | Commit a change to the github repo |
+| git pull origin master | Pull changes from github repo      |
+
 * 05/06/2011 Friday
 
 ** Design Thoughts
