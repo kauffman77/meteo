@@ -1,3 +1,7 @@
+(in-ns 'fractal)
+
+(clojure.core/use 'clojure.core)
+
 (defn radians [degrees] (. java.lang.Math toRadians degrees))
 
 (defmacro rot [g2d angle & body]

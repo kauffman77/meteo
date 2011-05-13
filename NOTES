@@ -2,6 +2,39 @@
 #+STARTUP: showall
 #+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/13/2011 Friday
+
+** Documentation setup
+Got documentation set up at home to use java html files to see API.
+| C-c d | Javadoc on current symbol |
+
+** Notes and clefs
+Middle C is C4, treble clef is circled around G4 and bass clef around
+F3.  See http://en.wikipedia.org/wiki/Clef for more info.
+
+I was looking at the emmentaler font and their notion of the treble
+and bass clef symbols is vertically centered at the note that they
+tend to center on, G for treble, F for bass.  This will make aligning
+them different than I had anticipated previously.  The common time
+signature is centered in the middle of its layout as it seems are most
+of the note heads.  Will need to experiment with this a little more
+moving forward.
+
+** Lilypond internals
+http://dvoi.com/files/lilypond/2.12.0/Documentation/user/lilypond-internals/index.html#Top
+
+Lots of info on the objects get inside lilypond. Look at
+[[file:~/Downloads/lilypond-2.12.3/lily/simple-spacer-scheme.cc::LY_DEFINE%20ly_solve_spring_rod_problem%20ly%20solve%20spring%20rod%20problem][simple-spacer-scheme.cc]] for a definition of the lilypond spring and
+rod problem.  This is a low level part of their approach to solving
+object collisions.
+
+** Layouts
+I'm going to have to do a several part layout scheme: measure (objects
+within a measure) and system (measures within a system).  Note also
+that the spacing of notes in a measure should be rhythmically uniform
+between parts.  This is an additional constraint I had neglected
+previously. 
+
 * 05/12/2011 Thursday
 ** Leiningen
 I installed leiningen at school, needed for slime interaction. Set
@@ -11,7 +44,7 @@ swank, the slime interface to clojure, with
 Start it with
 : swank-clojure
 
-** Inferior lisp
+** Inferior lisp and Slime
 Set up run-lisp to work with clojure, just modified the
 =inferior-lisp-program= to clj.  Don't have a eval buffer, but can
 probably get that.
@@ -19,10 +52,8 @@ probably get that.
 I got =slime= to run and it contains a ton of useful features, macro
 expansion, some debugging, etc.
 
-The basic setup is 
-
-
-** TODO Experiment with fonts/rendering
+The basic setup is to start swank from a shell or via my new
+=start-swank= then connect using the emacs =slime-connect=.
 
 ** Require and renaming
 Still trying to get my head around require/use etc but it appears that
