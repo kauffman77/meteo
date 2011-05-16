@@ -2,6 +2,160 @@
 #+STARTUP: showall
 #+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/16/2011 Monday
+
+** Saving layouts
+It would be nice to keep layouts around after a save or a view
+change.  This will speed display up a ton.  Example scenario
+
+- User loads a score, score layout is saved so display happens
+  immediately
+- User switches to view a buffer of a part, layout is generated for it
+  causing a delay
+- Changes are made to the part, document saved including part layout
+  and exits
+- User returns and opens score, the switches to same part - part
+  layout is already loaded so display happens instantly
+
+There are some prickly issues here as I want to support things like 
+- Score in natural pitch
+- Score in concert pitch 
+- Score in continuous view
+- Score in page view 
+- Parts in the above
+What I envision is keeping a cache of layouts available that can be
+examined to get a good start on generating a new layou.  For instance,
+switching from natural to concert pitch should not change the
+horizontal layout much so the natural pitch layout would be a great
+initial value for the concert pitch layout.  Similarly, the page view
+can use the continous view as a starting point, immediately beginning
+with system layout rather than measure-level.  
+
+This will also need to leverage the layout diff/alignment discussed
+below.
+
+Keep in mind that we'll have to deal with a score having multiple
+layouts associated with it and then multiple buffers associated with
+them all updating the same logical data.  The UI will have to give
+clear indications what is associated with what.  For instance,
+modifying a part in a buffer should potentially modify score
+buffers associated with the part unless the modification involves only
+layout details pertaining to the part.
+
+** Layout diff/changed
+It would be extremely useful if I could figure out a way to do layout
+diffing.  The scenario is:
+
+- A score is loaded
+- The user scans to a certain location and runs a command to insert or
+  delete notes
+- Since the logical representation is changed, the layout must be
+  regenerated and reoptimized
+- However, there is significant overlap between the existing layout
+  and the new logical representation - only a few new logical notes
+  are present which will require new layout info
+- The intial value of the old layout is usually going to be a good
+  starting point for the new layout
+
+It will drastically increase the turn-around time of new layout
+optimization if we leverage the old layout info.  This will require
+the program to
+
+- Identify which objects in the logical representation already have a
+  corresponding layout in the old layout
+- Create required new layout objects within the prexisting layout
+  (functional/nondestructive so that the old layout can be preserved
+  for undo)
+- Perform efficient optimization to determine the new layout.  This
+  starts by just optimizing the parts of the layout that contain new
+  elements, then propagating the changes out if need be (layout
+  adjacent measures, vertically aligned maesures, trigger system
+  layout if needed)
+
+This will at least require some sort of correspondence between logical
+and layout data structures.  I am curious if zippers can help here.
+
+** User loading and slime
+Need to have a look at how slime loads up user code so that I can
+utilize the same mechanism to get user libraries to load.
+
+* 05/15/2011 Sunday
+
+** Horizontal layout
+I was thinking about layout and realized that the first step is simply
+to determine the horizontal spacing appropriate for the time signature
+and try to use a layout that distributes beats evenly.  This is a good
+target and initial value: shifting some notes left/right a slight
+amount will be what is used to adjust.  If more room is required for
+accidentals, it might be better just to allow more room for all notes
+to get equal spacing.  I'll want to look at a lot more music examples
+to learn how this is done in practice, particularly for piano music.
+
+In looking at a few charts, enough space should be left between most
+notes to accomodate accidentals without changing the spacing much,
+only small adjustments.  This falls in line with the idea that the
+visual layout should reflect the rhythmic interpretation.
+
+The question is, when and how do we incorporate that information?  The
+objective function could have a notion of trying to align notes to
+certain horizontal positions.  It will also need to include terms for
+overlapping objects and the ideal distances between accidentals and
+their associated notes.  
+
+Remember to keep the concerns separate
+- Logic to Layout
+  - Create visual objects from the logical representation
+  - Establish hard constraints and the objective function
+- Layout optimization
+  - Determine initial values for the objects in measures
+  - Optimize within measure positions
+    - Use a simple discrete search alg
+    - Transformation functions are provided in a list along with the
+      objects to which they may be applied
+    - These will be things like nudge notes left/right, change arcs of
+      slurs, flip stems, adjust incline of beams, widen the measure
+    - Objective function measures collisions, deviation from ideal
+      note positions, closeness of objects to their targets
+    - Search until a timeout occurs
+    - Each improvement is committed to a variabl so at the point of
+      timing out the best value can be returned      
+  - Use this information to determine initial measure and system
+    layout in a similar search fashion - determine system/page breaks
+    and vertical system arrangement on the page to avoid vertical
+    collisions, enforce glued and always-break measures or targetted
+    measures per system
+  - Take another pass at within-measure layout with the new
+    information 
+  - Potentially return to system layout and iterate
+  - Should use a zero-value to indicate layout is visually as good as
+    possible according to the objective function
+
+Note that between the measure-level and system-level layout opt, new
+objects may be introduced.  If the system layout decides to break a
+system, the first measure may have staff and key/time signature
+information added to it.  This will change the layout and objective
+function for that measure, potentially creating a big jump in the
+objective value.  This means it will be important to normalize in some
+fashion so that we don't get oscillatory behavior.  
+
+A simple normalization choice is to divide by the number of objects in
+the measure.  Choices must be made there, like do key signatures count
+as 1 object or as 1 for each sharp/flat.  That is something we can
+experiment with later.
+
+Another difficulty is that the optimization problem changes between
+solutions.  For example, layout out a piano part determines that the
+RH requires a wider measure than the LH, so we must then reoptimize
+the LH, particularly the target horizontal positions of each beat.
+For a score with many parts, this generalizes to laying out the other
+=N= parts again once the widest has been determined which will be
+inefficient.  We could use a very cheap method to determine the widest
+measure, lay it out, then lay the others out which would save some
+time.
+
+Logging will be important during development to track how optimization
+proceeds. 
+
 * 05/13/2011 Friday
 
 ** Documentation setup
