@@ -1,6 +1,61 @@
 #+TITLE: Meteo Development Notes
 #+STARTUP: showall
-#+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
+#+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
+
+* 05/18/2011 Wednesday
+
+** Layout orientation
+After some thought, I have begun reconsidering the proper arrangement
+of the logical data representation.  The two choices I see right now
+are to do a part-wise or measure-wise.  Part-wise has each part as a
+list of measures, while measure-wise has each measure contain a list
+of parts.  This is essentially the row order or column order argument
+for matrices, except that I'll likely be using lists to support faster
+insertion.  In both these cases I'm assuming a single point/mark is in
+use and that measure insertion is more frequently done accross the
+entire score.  If parts are rows and measures columns, then part-wise
+(PW) arrangement favors editing single parts while measure-wise (MW)
+arrangment favors favors multipart editing.  Below are common
+operations and a guess at how fast the data would support it.
+
+|--------------------------------+------+-----+-----+--------------------------------------------|
+| Operation                      | Freq |  PW |  MW | Notes                                      |
+| Score                          |      | 523 | 629 |                                            |
+|--------------------------------+------+-----+-----+--------------------------------------------|
+| In-measure move                |   10 |  10 |  10 | Both right/left                            |
+| Accross-measure move           |    8 |   9 |   8 | Up right down vs Up right find             |
+| Next/prev part                 |    7 |   5 |   9 | PW must walk, MW direct                    |
+| In-measure edit                |   10 |  10 |  10 | Both direct                                |
+| Accross-measure edit           |    7 |   8 |   7 | Direct for PW, MW must track rect          |
+| In-measure multipart edit      |    7 |   4 |   8 | Walk to same measure for PW, direct for MW |
+| Accross-measure multipart edit |    5 |   3 |   7 | Ditto for PW, track rect for MW            |
+| Synch of aligned measures      |   10 |   5 |   9 | PW must walk, MW is direct                 |
+| Measure insertion/deletion     |    7 |   5 |   8 | PW must walk, MW is direct                 |
+| Part insertion/deletion        |    4 |   8 |   4 | PW direct, MW must walk to each measure    |
+|--------------------------------+------+-----+-----+--------------------------------------------|
+#+TBLFM: @2$3=vsum(@II..@III * @II$2..@III$2)::@2$4=vsum(@II..@III * @II$2..@III$2)
+
+This assessment favor MW arrangment as I expect to be doing man
+
+** Concurrency
+In reading about the concurrency types in Clojure, I'm starting to get
+a feel for what would be useful.
+
+*Refs* are good when many threads want to simultaneously access and
+change the same global variable which needs to have its state
+preserved.  The =alter= command is used to update, =commute= can be
+used to allow more concurrency if the operations are commutative, and
+=set-ref= is the equivalent of a scheme =set!= which mutates the value
+(it is not preferred in clojure).
+
+
+
+** Debugging Clojure
+Describes some features of swank for debugging I was not aware of
+http://hugoduncan.org/post/2010/swank_clojure_gets_a_break_with_the_local_environment.xhtml
+
+Gives a debug REPL that can be inserted.
+https://github.com/georgejahad/debug-repl
 
 * 05/17/2011 Tuesday
 
