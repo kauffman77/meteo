@@ -2,6 +2,37 @@
 #+STARTUP: showall
 #+OPTIONS:   H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/17/2011 Tuesday
+
+** Joy of Clojure
+Book came today and is full of goodies some of them are below.
+
+** letfn
+This is how mutual recursion and internal functions are set up.  The
+syntax is like this.
+#+BEGIN_SRC clojure
+(defn factorial [n]
+  (letfn [(fact [i cur]
+	    (if (< 0 i)
+	      (recur (dec i) (* i cur))
+	      cur))]
+    (fact n 1)))
+#+END_SRC
+Mutual recursion can also be set up here as all of the function names
+are simultaneously made available to one another.
+
+** Builtin method enumeration
+clojure-contrib contains a function =clojure.contrib.repl-utils/show=
+which will enumerate the methods available for a java object, both
+static (class level) and object level.  This fills the hole I thought
+would be there from rhino.
+
+** Built in javadoc
+Clojure has a built in javadoc locator:
+=clojure.java.javadoc/javadoc= which grabs the java documentation
+either locally or remotely.  I have played around with this and got a
+much simpler javadoc and bound it to
+
 * 05/16/2011 Monday
 
 ** Saving layouts
@@ -74,6 +105,54 @@ the program to
 
 This will at least require some sort of correspondence between logical
 and layout data structures.  I am curious if zippers can help here.
+
+** Layouts as annotations
+I worked through some examples of how a layout may just be represented
+as an extension of the music logic, the logic annotated with a
+=:layout-objects= map which all have a minimum of positions, glyphs,
+etc.  While optimizing, the sizes can be determined by asking glyphs
+how big they are.  Drawing means traversing the logic, moving the pen
+around, and applying drawing instructions for each layout object.
+This is actually nice because it means that measure-local coordinate
+systems may be employed which would greatly simplify the drawing as
+the pen can be translated to the start positions of each measure and
+local coordinates can then be used.  Part layouts can also then be
+much more directly used from a score buffer to a part buffer.  
+
+By implicitly sharing data accross logic and layout, we'll a fair
+amount of space can be saved.  
+
+When changes are made to the score, we need to figure out where they
+corresponding layout changes need to happen.  A simple way is to scan
+the entire data structure and look for the first difference.  We'd
+then need to "recover" by looking for the next correspondence between
+old and new logic.  This might be done with measure-level
+similarities.  Alternatively, a single N*M sequence alignment might be
+useful here to determine the overall correspondence between measures.
+But this is very expensive for every insert delete.  Also keep in mind
+that the alignment approach is made much more complex by multiple
+parts which may be inserted and deleted.
+
+
+
+** Layout annotation chains
+Treating layouts as an annotation will be greatly simplified by using
+a chain of annotations.  For example, a key signature dictates when
+sharps and flats need to be displayed.  Deciding whether to add an
+accidental as a layout object will requires knowing the current key
+signature.  Likewise, knowing when to notify that too many notes are
+in a measure requires knowledge of the time signature and how many
+notes have been added to the measure thus far.  Both these require
+looking backwards to see if key changes have happened.
+
+I might think of encapsulating key/time signature changes in a
+context, a general sort of container which holds such information.
+A lot of decisions need to be made here as I haven't resolved the
+problem of what a context holds - parts or measures?  This is similar
+to the horizontal vs. vertical arrangement discussed in the music xml
+docs.  I'll want to avoid long search times for such information and
+also support global options like view in concert pitch to decide the
+actual vertical position notes.
 
 ** User loading and slime
 Need to have a look at how slime loads up user code so that I can
@@ -445,7 +524,7 @@ other two for various things.
 
 * 05/05/2011 Thursday
 
-** Colum averages in org-mode tables
+** Column averages in org-mode tables
 Use a formula like this to get a column average in an org-table
 | C-u C-c =      | Edit formula in cell             |
 | vmean(@1..@14) | Mean of row 1-14, current column |

@@ -16,7 +16,7 @@
 (def height 400)
 
 (defn draw [^Graphics2D g2d]
-  (let [frc (.getFontRenderContext ckg2d)
+  (let [frc (.getFontRenderContext g2d)
   	glyphvec (.createGlyphVector font frc "\ue1a9")
   	r2d (.getVisualBounds glyphvec)
   	glyphmet (.getGlyphMetrics glyphvec 0)
