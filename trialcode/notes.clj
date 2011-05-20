@@ -1,3 +1,8 @@
+(ns notes
+  (:require (clojure [zip :as zip]
+		     [xml :as xml])))
+
+
 ;; (defn note [len pitch]
 ;;   {:len len :pitch pitch})
 
@@ -33,8 +38,6 @@
   (map (fn [_] (randmeasure)) (range n)))
 
 (def p (randpart 1000))
-
-(require ['clojure.zip :as 'zip])
 
 (defn next-note [note]
   (if-let [nnote (zip/right note)]	;Move point forward on note
