@@ -19,7 +19,7 @@
 
 
 (defmulti next-note #(:tag (zip/node %)))
-  
+
 ;; Special case of a zipper already being a note
 ;; This is broken as it will pick up <forward> attributes too
 (defmethod next-note :note [note]
@@ -53,4 +53,3 @@
 (defn first-note [z]
   (next-note (zip-top z)))
 
-(defn forward-note
