@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="11.2">
+  <zoom_level>10</zoom_level>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>120</x>
+      <y>20</y>
+      <w>250</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>Edit
+--
+--
+insert(this, marker, mect) : nil
+delete(this, marker, marker) : nil
+copy(this, marker,marker) : mrect
+mectangle(this) : mectangle
+
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>140</x>
+      <y>330</y>
+      <w>210</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>Measure
+--
+--
+notes(m) : note seq
+props(m) : map</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>410</x>
+      <y>30</y>
+      <w>250</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>Mectangle
+--
+--
+Notes, measures, parts
+May contain partial measures
+What goes in clipboard
+--
+measures(this) : measure seq
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>600</x>
+      <y>680</y>
+      <w>210</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>Draw
+--
+--
+draw(this,graphics-port)
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>100</x>
+      <y>680</y>
+      <w>310</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>Layout
+--
+--
+layout(mlayout-seq) : layou
+layout(mlayout-seq, parts) :layout</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>410</x>
+      <y>570</y>
+      <w>300</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>UpdateLayout
+--
+--
+layout(layout, new-score, edits) :layout
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>140</x>
+      <y>450</y>
+      <w>210</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>Note
+--
+--
+pitch(n)
+duration(n)
+props(n) : map</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>120</x>
+      <y>170</y>
+      <w>250</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>Marker
+--
+--
+measure(m) :int
+beat(m) :int
+part(m) :int
+update(m, edit-seq) :nil</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>130</x>
+      <y>560</y>
+      <w>250</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>LayoutMeasure
+--
+--
+layout(measure) : mlayout
+layout(measure, parts) :mlayout</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

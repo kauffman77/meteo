@@ -2,6 +2,301 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/22/2011 Sunday
+
+** Abstractions and Protocols
+I've really been looking at things at too low of a level at this
+point, considering implementation details of the logic structure and
+so forth.  A more useful activity will be to get the large-scale
+abstract structure of the editor in place.  With good interfaces
+between the parts, I can get the system up and running then worry
+about efficiency considerations of the various parts.  A good score
+structure will provide certain operations and if I use that interface,
+I can change the underlying implementation later without affecting the
+other parts.
+
+This is actually proving more difficult than I thought.  I need to
+specify the protocols to keep the parts clean and separated.  This is
+the first priority now.
+
+** UML 
+Trying to find a simple UML tool to some diagramming, but this is
+proving more difficult.
+
+Tried OpenModelSphere and it was a pain on windows, jar won't run on
+linux.
+
+Tried Umbrello, KDE style program, and it crashed repeatedly.
+
+Found UMLet which is simple, runs under java, and works on linx.
+Using this for now nad building a meteo UML ddiagram of protocols.
+
+http://www.umlet.com/
+
+* 05/21/2011 Saturday
+
+** Ropes for data structure
+Ropes are another interesting alternative to a linear representation.
+They are a binary tree (not necessarily full) which log(n) complexity
+for most operations.  With a zipper, fast iteration (movement from
+point) would probably also be possible.  The wikipedia article is
+pretty bad so look for the original paper to see details.  There are
+several implementation links, including for ocaml and common lisp.
+
+The rope would track measures to allow faster random access: O(log n).
+
+** Other data structures
+Has some good links: http://catch22.net/tuts/neatpad/17
+
+Another link that is on this page with a very good discussion of using
+balanced trees to do editing of hex files:
+http://www.chiark.greenend.org.uk/~sgtatham/tweak/btree.html
+
+
+* 05/20/2011 Friday
+
+** Futures
+Futures are going to be an excellent way to achieve concurrent
+execution without sacrificing data structure sensibility.  Using
+=future= a body is executed in a separate thread without blocking the
+current thread.  At the point of dereferencing, if the computation has
+not finished, the dereferencing thread blocks until it completes.
+This makes things really easy to start spawning lots of threads
+quickly.  This means I can essentially just spawn and use and things
+will run in concurrently on their own.  There are probably more
+complexities than this involved, but it's an encouraging start.
+
+The only thing I'd like to add is some sort of timeout check - if it
+takes longer than a certain amount of time, then cancel the future.
+We'll always need an initial layout, but further refinements should be
+timed.  So, I'll experiment and potentially use futures for initial
+layouts if they are fast enough while a thread-based scheme will be
+used for refinement.  A single layout refinement would look like
+#+BEGIN_SRC clojure
+(defn refine [init work timeout]
+  (let [cur (atom init)			;Set initial state
+	fut (future			;Spawn worker thread
+	     (while true
+	       (dosync (swap! cur work))
+	       (Thread/sleep 0)))]	;Worker: pause to see if cancelled
+    (Thread/sleep timeout)		;Main: Sleep until timeout
+    (when (not (future-done? fut))	;Main: stop worker if still running
+      (future-cancel fut))
+    @cur))
+#+END_SRC
+This approach is a little dangerous as I found out that futures, even
+when cancelled, sometimes don't get rid of the thread they were
+running.  Adding a =(Thread/sleep 0)= seems to alleviate this.
+
+I will write to the clojure group to find out what's happening here.
+
+** Separating concerns
+Things are getting complex in terms of representing logic
+vs. layouts.  The layout is intermediate and belongs to a buffer, keep
+that in mind.  It is a view of the logical structure.  One layout per
+buffer.  
+
+A mark should be part of the logical structure as well changes to the
+structure can change the marks.  Buffers request that the local
+structure track marks.  
+
+
+* 05/19/2011 Thursday
+
+** Abiword
+I'm looking at the source for Abiword to get a sense of how they do
+they're document representation.  There appears to be some good
+documentation on their internal data structure here
+http://abisource.com/doxygen/
+
+The abiword approach seems to be to represent the entire original text
+as a fixed buffer, edits are in a separate buffer of text, and the
+document itself as a doubly linked list of pieces which is traversed
+to get the form of the document.  Edits are assigned a change record
+and undo is implemented as a stack of these change operations which
+can be moved down to undo or back up to redo operations.  In a lot of
+ways, this is trying to set up persistent data where "changes" are
+just represented as additional data added in to the original or new
+links being formed.  The formatting is done using pieces which are
+text that all have the same formatting and the piece contains a link
+to a data structure describing the formatting.  These formatting
+structures are kept in another table of formatting objects.  In
+looking at the saved file format for abiword, these styles appear in a
+table at the beginning and are referenced by name in the spans.  They
+have a linked structure (heading 1 inherits from normal which is a
+root) which is also represented by name.
+
+The head documentation comments that searching can be a bit slow in
+the doubly-linked list and a tree would be preferable.  They also
+comment that the internal data structure is not optimized for layout
+very well.
+
+** Supporting graphics
+I've been trying to figure out how support for graphical jumping can
+be added in.  At a bare minimum, I'll want to be able to click to move
+the cursor.  This means that the layout object closest by most be
+identified and the cursor moved there.  This looks hard with the
+data structures I'm considering.  There is no notion of graphical
+objects currently, I'd have to write my own clicking algorithm: have a
+graphical search tree with coordinates corresponding to objects.  This
+would enable me to at least give a layout object, but setting the
+point will be difficult.  Unless each layout has a zipper associated
+with it which would allow setting the point immediately.  This would
+be an interesting idea if the memory overhead of keeping that many
+zippers around wasn't too bad.  However, keep in mind that changes to
+the logic might invalidate all the zippers requiring re-upping them.
+However I currently haven't figured out how to get layout to work save
+for rescanning the entire data structure anyway so it may be fine to
+do this - as we scan, save a zipper at each spot with the location.  
+
+Actually a better way to do this is during drawing.  If a layout is
+just annotated logic, then we zip through the layout associating a
+zipper path with a coordinate in graphical space.  However, zippers
+don't have a nice way to replicate a path: a zipper is the whole data
+structure just with a position in it.  So unless there was a way
+around this, I'll have to use zippers for the original logic.  There
+may be some synchronization problems with this - don't want logic to
+get out of sync anywhere, but maybe I can get around this.
+
+I experimented a little with this in file:trialcode/mapzipper.clj and
+it seems that the the memory does increase, but perhaps acceptably.  I
+experimented with a modified version of the file 000206B_.xml with 748
+measures in it and 3363 notes.  Getting zippers set up for every note
+(small bug in my routines led to 3412 notes, forward tag identified as
+a note) costs 1.2MB.  There may are better alternatives to this
+strategy, but I'll keep it in mind as a nice, naive method.  An
+alternative that would cut down a lot would be to use the same measure
+zipper for all notes and include just a little bit of extra info that
+specifies the part and note.  This hybrid would cut down on memory
+required.
+
+** Zippers work differently than expected
+Zippers don't quite work the way I thought they did.  Zipping to the
+end of a structure gets you stuck: the ending has a circular =zip/next=
+and a nil =zip/prev=.  It appears that the way to avoid this is to check
+next for =zip/end?=.  Not the way I would have implemented it, but
+such is life.
+
+** How to draw a note
+Suppose we get to the point in layout where we actually need to decide
+the vertical position of a note head.  Information pertinent to this
+task is
+
+- Relative coordinates of the staff
+- The vertical unit of height - note head height
+- Relative octave of the staff
+- Which clef the staff being drawn is in
+- Pitch to be notated 
+- Whether we're transposing for an instrument
+- Whether there is a temporary adjustment (like 8va) in effect
+- Dictated style like flip the enharmonic
+
+The process of determining the note head position will be
+- Asked to draw a concert E5 for a concert Bb trumpet in the score
+- The key is concert C which is D for trumpet with 2 sharps
+- Determine the instrument transposition 
+  - Bb trumpet plays a major 2nd up from concert, so the written note
+    becomes an F#, written at the F5 position
+  - F# is in the key signature so no accidentals need be added
+- Determine if the note has special instructions for drawing
+  - Though stored as an F#, the note is requested to be flip its
+    enharmonic so it will be written as a Gb instead written at the G5
+    position 
+  - Assume that the accidental has already been added to the list of layout
+    objects 
+- From the staff and clef information, compute the top staff line note
+  - Treble clef top note is F5 
+- Determine the local transposition for things like 8va
+  - An 8va is in effect so the staff sounds an octave higher
+  - Treble clef top note is F6 
+- Compute the number of steps between the note to draw and the top
+  staff line note
+  - Treble clef F6, drawing at F5, the steps different F6-G5 = 7
+- This is the relative vertical position of the written note the
+  vertical coordinate increases going down
+  - Draw at vertical position 7
+
+This process illustrates a couple things
+- We need to be able to access instrument and staff information pretty
+  quickly to determine the top staff line
+  - Note that there may be a change clef or change of instrument at
+    some point so this is not a global propert of the staff
+  - For ultimate flexibility, this may not even be a property of
+    measure but of just some notes.  However, this probably does not
+    come up often
+  - 8va is a property of notes and may needs to set up somehow 
+- The process of determining the written note also determines
+  accidentals which adds to the layout objects.  It must be run prior
+  to determining horizontal layout.  I'd imagine something like like a
+  =(get-layout-objects context note)= which returns a collection of
+  objects to be laid out.  The context must carry key signature and so
+  forth.  
+- Once the top line staff note and target note position are
+  determined, vertical position is easy
+
+How do we carry information like current staff/instrument trasposition
+around efficiently?  My current thoughts go in two directions
+- A tree data structure representation of the entire score rather than
+  a linear structure.  Context is looked up by looking at a parent
+  node or a series of parent nodes.  This is nice as any note can look
+  up its information by traversing some steps up the tree.
+  Additionally this paves the way for concurrent processing of the
+  measures. Editing operations become much less clear in this context
+  though
+- Contextual information is built during linear scans of the score,
+  changes like time signature, key signature, played instrument, and
+  so on are accumulated and altered during the traversal.  This is
+  much simpler and what I had originally envisioned for the processing
+  but it occurs to me now that this approach does not lend itself to
+  concurrent processing of measures.  
+
+** Concurrent processing of measures
+I would really like to exploit the concurrency features of clojure to
+get multiple threads working on the score for layout.  There is a
+quick example of this using some java on the the [[http://clojure.org/concurrent_programming][clojure site]] which
+looks like this
+#+BEGIN_SRC clojure
+(import '(java.util.concurrent Executors))
+(defn test-stm [nitems nthreads niters]
+  (let [refs  (map ref (replicate nitems 0))
+        pool  (Executors/newFixedThreadPool nthreads)
+        tasks (map (fn [t]
+                      (fn []
+                        (dotimes [n niters]
+                          (dosync
+                            (doseq [r refs]
+                              (alter r + 1 t))))))
+                   (range nthreads))]
+    (doseq [future (.invokeAll pool tasks)]
+      (.get future))
+    (.shutdown pool)
+    (map deref refs)))
+ 
+(test-stm 10 10 10000)
+-> (550000 550000 550000 550000 550000 550000 550000 550000 550000 550000)
+#+END_SRC
+This uses a lazy seq of tasks and a thread pool for concurrency.  The
+point is to illustrate the lack of need for locks.  But I'll want to
+exploit the task parallelism if possible.  This means avoiding a the
+need to propogate information about later parts of the score from
+earlier parts: we want to be able to look this up fast.  
+
+** Linear representation still enables parallelism
+My fears of crippling parallelism using a sequential data layout are
+unfounded.  During the walk, all that is needed is to spawn worker
+threads to complete measure layout as we walk through.  Each is passed
+the currently accumulated context and sets a reference in the layout
+structure at the end.  
+
+** Events
+Events such as 8va, dynamics, and rehearsal instructions (rit.) will
+come in two flavors.  Measure-attached will have some sort of time
+designator such as beat 1, 2+1/4, or the like which specifies it's
+desired position.  These will be stored as expressions attached to the
+measure.  Note-attached expressions will be stored as attached to the
+notes and inherit their horizontal position.  Both of these will also
+have their own layout specs such as above or below the staff.
+
 * 05/18/2011 Wednesday
 
 ** Layout orientation
@@ -32,10 +327,22 @@ operations and a guess at how fast the data would support it.
 | Synch of aligned measures      |   10 |   5 |   9 | PW must walk, MW is direct                 |
 | Measure insertion/deletion     |    7 |   5 |   8 | PW must walk, MW is direct                 |
 | Part insertion/deletion        |    4 |   8 |   4 | PW direct, MW must walk to each measure    |
+| Jump to measure                |    7 |   3 |   3 | Both must scan                             |
 |--------------------------------+------+-----+-----+--------------------------------------------|
 #+TBLFM: @2$3=vsum(@II..@III * @II$2..@III$2)::@2$4=vsum(@II..@III * @II$2..@III$2)
 
-This assessment favor MW arrangment as I expect to be doing man
+This assessment favor MW arrangment as I expect to be doing many more
+measure-based operations than part-based.  To boot, there will be many
+more measures than parts, so moving between measures in a part would
+involve only a step up and then back down the number of parts there
+are.
+
+It would also be possible to create a non-hierarchical data structure
+for the score which has links between the different elements.  Treated
+statically, this might have some advantages for movement as
+up/down/left/right could all be included as links for measures.  It
+would complicate things quite a lot conceptually though and
+potentially wipe out the ability to print the data structure.
 
 ** Concurrency
 In reading about the concurrency types in Clojure, I'm starting to get
