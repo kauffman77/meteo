@@ -2,6 +2,125 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/23/2011 Monday
+
+** Git merge
+When a conflict arises, edit the conflicting file manually and then
+: git commit -a -m 'msg'
+to commit.
+
+** Indirection 
+I'll use some sort of ref type as the mode of indirection to enable
+mutation.  Have note decided yet which is most appropriate (ref, atom,
+agent, or var).  For example, a buffer will essentially be a control
+structure which has
+- A score ref, potentially shared with other buffers
+- A layout ref watching the score agent
+- A display ref watching the layout agent
+A command making a change to the score does so with funcitons in the
+=Edit= protocol.  A command should probably block until the edit
+finishes which probably means using refs.  This update is recognized
+by the layout updater which then runs on the current value of the
+score and re-optimizes for changes.  Then the display notices the
+changes in the layout and updates the view of it.
+
+This is actually sort of tricky.  Here is a simple sequence of events 
+
+A call like
+: (insert score '(1,1,2) {:pitch C4 :dur 4})
+is made which will put a note in the first measure, first beat of the
+second part.  We actually want to mutate the score here, so it would
+look more like
+#+BEGIN_SRC clojure
+(ref score)                             
+(dosync
+ (alter score insert '(1,1,2) {:pitch C4 :dur 4}))
+#+END_SRC
+The question is, do we use protocols to mean mutation or only
+production of the new persistent version of the data.  This is
+important because of where the dosync happens.  In the above, the
+=Edit= protocol implies nothing of the complexity of insert.  It locks
+up the score and runs the function, potentially retrying if need be.
+This could potentially lead to along delay, but it seems to make more
+sense to lock down the score while an edit happens.  
+
+For efficient insertion, we'll want to cache certain markers, in
+particular the point which should have cheap insertion.  The series of
+events would be something like
+- The =insert= function is called with the coordinates of the point
+- In the implementation, we look in the cache of marks and see that
+  there is a valid zipper for that set of coordinates
+- The edit is done using something like zip/edit and the edited score
+  is retured with zip/root
+- A higher level function which inserts at the current point will be
+  called to move the point beyond the current stuff, it is not the
+  responsibility of the low-level insert to do that
+- If there is no cached zipper, another approach can be taken. 
+  - Create the zipper for the given coordinates and proceed add it to
+    the cache
+  - Modify the score in a more direct manner
+- Once the score is modified, markers need to be updated, potentially
+  invalidating zippers they might have.  This creates a circularity
+  problem because we don't want to invalidate the marker which we just
+  used to make the change.
+- I'll need to use edit sequences for this and make sure that the
+  marker update doesn't invalidate markers at the point of edit
+  - Insertion: the marker stays at the insertion point so it looks
+    like it precedes the change. Ex: insert notes at (2,3,1), marker
+    stays at (2,3,1) and the update uses a <= to check for whether it
+    needs to be updated
+  - Deletion: two markers are used. If neither is cached, create the
+    ending marker. Deletion should happen at < the end marker
+    - For an ending cached marker, back up one step and work backwards
+      using zip/remove objects until the marker position is <= to the
+      beginning position of deletion
+    - For a beginning cached marker, move forward to just before the
+      ending marker and then perform the ending marker operations
+    - Ex: Delete between (2,3,1) and (3,4,2); starting at (3,4,2),
+      back up one note and then delete notes in part 2 until the
+      beginning of the measure is reached, then move to (3,4,1) and do
+      the same. Then move back a measure, delete notes down to and
+      including (2,3,2) and (2,3,1).  This leaves the note formerly at
+      (3,4,1) at (2,3,1) and likewise (3,4,2) at (2,3,2).  It leaves
+      the point at (2,3,1) which should satisfy the <= for checking
+      whether a marker should have its zipper invalidated
+
+** Are zippers a good idea?
+I played around in notes.clj again with the efficiency of zippers.  It
+seems at least for the simplified note representation that I'm using
+that they are pretty fast.  The approach was to define a sequence of
+parts where
+- Each part had a modification
+- The modification is made at the point position
+- zip/root is called to save the part
+This could create 4K parts with single note modifications in less than
+a second.  This indicates using zippers will be fast enough in the
+bulk of cases for score edits.  See the above node for additional
+details.
+
+** Behavior of delete
+Deleting a region, a rectangular area, will call for different
+behavior than a typical text editor.  If whole measures are selected
+but not all parts are selected in the rectangle, the behavior is not
+obvios.  I need to decide between these two possibilities
+1. For the affected parts, clear the measures of notes leaving
+   emptiness in its place but preserve the presence of measures.
+2. Delete the measures in the affected parts shifting the remaining
+   measures to the left to fill in.  Empty measures are added at the
+   end of the score to compensate for length.  This is much harder in
+   a measure-wise scheme as I'll need to completely rewire all the
+   subsequent measures.  It is relatively easier in the part-wise
+   arrangment.
+I'm thinking (1) is the more common behavior as we don't typically
+want shifting individual parts to occur.  That said, I'll probably
+want to set up some code at some point to make this happen.  Recall
+that inserting and deleting measures for all parts is a relatively
+easy operation in the measure-wise orientation and probably commmon
+enough to merit their own operations.
+
+
+
+
 * 05/22/2011 Sunday
 
 ** Abstractions and Protocols

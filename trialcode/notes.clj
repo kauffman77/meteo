@@ -44,6 +44,7 @@
       (zip/down nmeas)
       note)))
 
+(def p (randpart 1000))
 (def z (zip/seq-zip p))
 (def point (atom (->> z zip/down zip/down)))
 
@@ -65,3 +66,17 @@
 
 (defn breakme []
   (->> z zip/down zip/down zip/down zip/down zip/node))
+
+
+;; Times the creation of lots of zip/roots with small changes at the
+;; point position, creates a sequence of scores with a modified note
+;; in incrementing positions
+(def states
+  (let [n (reduce + (map count p))]
+    (time
+     (do
+       (beginning-of-part point)
+       (for [_ (range n)]
+	 (-> (forward-note point)
+	     (zip/replace (note. 10 'A))
+	     zip/root ))))))

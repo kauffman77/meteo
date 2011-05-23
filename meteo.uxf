@@ -4,7 +4,7 @@
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>120</x>
+      <x>40</x>
       <y>20</y>
       <w>250</w>
       <h>140</h>
@@ -12,34 +12,33 @@
     <panel_attributes>Edit
 --
 --
-insert(this, marker, mect) : nil
-delete(this, marker, marker) : nil
+insert(this, marker, mect) : 
+delete(this, marker, marker) : 
 copy(this, marker,marker) : mrect
 mectangle(this) : mectangle
-
+last-edit(this) :edit-seq</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>630</x>
+      <y>220</y>
+      <w>210</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Measure
+--
+--
+voices(partN) : voice seq
 </panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>140</x>
-      <y>330</y>
-      <w>210</w>
-      <h>90</h>
-    </coordinates>
-    <panel_attributes>Measure
---
---
-notes(m) : note seq
-props(m) : map</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <type>com.umlet.element.Class</type>
-    <coordinates>
-      <x>410</x>
-      <y>30</y>
+      <x>630</x>
+      <y>20</y>
       <w>250</w>
       <h>190</h>
     </coordinates>
@@ -51,28 +50,31 @@ May contain partial measures
 What goes in clipboard
 --
 measures(this) : measure seq
+parts(this) :int seq
 </panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>600</x>
-      <y>680</y>
-      <w>210</w>
-      <h>60</h>
+      <x>730</x>
+      <y>620</y>
+      <w>240</w>
+      <h>120</h>
     </coordinates>
     <panel_attributes>Draw
 --
 --
 draw(this,graphics-port)
+xcoord(this) ?
+ycoord(this) ?
 </panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>100</x>
+      <x>40</x>
       <y>680</y>
       <w>310</w>
       <h>110</h>
@@ -80,62 +82,62 @@ draw(this,graphics-port)
     <panel_attributes>Layout
 --
 --
-layout(mlayout-seq) : layou
+layout(mlayout-seq) :layout
 layout(mlayout-seq, parts) :layout</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>410</x>
-      <y>570</y>
-      <w>300</w>
+      <x>40</x>
+      <y>800</y>
+      <w>330</w>
       <h>70</h>
     </coordinates>
     <panel_attributes>UpdateLayout
 --
 --
-layout(layout, new-score, edits) :layout
+layout(layout, new-score, edit-seq) :layout
 </panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>140</x>
-      <y>450</y>
-      <w>210</w>
-      <h>100</h>
+      <x>630</x>
+      <y>340</y>
+      <w>220</w>
+      <h>110</h>
     </coordinates>
     <panel_attributes>Note
 --
 --
-pitch(n)
-duration(n)
-props(n) : map</panel_attributes>
+pitch(n) :keyword
+abs-pitch(n) :int
+duration(n,time-sig) :rational
+</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>120</x>
+      <x>40</x>
       <y>170</y>
       <w>250</w>
-      <h>130</h>
+      <h>90</h>
     </coordinates>
-    <panel_attributes>Marker
+    <panel_attributes>TrackMarkers
 --
 --
-measure(m) :int
-beat(m) :int
-part(m) :int
+set(this, marker, key) :nil
+get(this, key) :marker
 update(m, edit-seq) :nil</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>130</x>
+      <x>40</x>
       <y>560</y>
       <w>250</w>
       <h>110</h>
@@ -145,6 +147,55 @@ update(m, edit-seq) :nil</panel_attributes>
 --
 layout(measure) : mlayout
 layout(measure, parts) :mlayout</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>40</x>
+      <y>270</y>
+      <w>250</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>Marker
+--
+--
+measure(m) :int
+beat(m) :int
+part(m) :int
+coords(m) :(int,int,int)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>630</x>
+      <y>280</y>
+      <w>160</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Voice
+--
+--
+notes(v) : note seq
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>630</x>
+      <y>460</y>
+      <w>220</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>defmulti diff
+--
+--
+pitch(n) :keyword
+abs-pitch(n) :int
+duration(n,time-sig) :rational
+</panel_attributes>
     <additional_attributes/>
   </element>
 </diagram>
