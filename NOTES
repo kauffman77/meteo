@@ -2,6 +2,105 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/22/2011 Sunday
+
+** Abstractions and Protocols
+I've really been looking at things at too low of a level at this
+point, considering implementation details of the logic structure and
+so forth.  A more useful activity will be to get the large-scale
+abstract structure of the editor in place.  With good interfaces
+between the parts, I can get the system up and running then worry
+about efficiency considerations of the various parts.  A good score
+structure will provide certain operations and if I use that interface,
+I can change the underlying implementation later without affecting the
+other parts.
+
+This is actually proving more difficult than I thought.  I need to
+specify the protocols to keep the parts clean and separated.  This is
+the first priority now.
+
+** UML 
+Trying to find a simple UML tool to some diagramming, but this is
+proving more difficult.
+
+Tried OpenModelSphere and it was a pain on windows, jar won't run on
+linux.
+
+Tried Umbrello, KDE style program, and it crashed repeatedly.
+
+Found UMLet which is simple, runs under java, and works on linx.
+Using this for now nad building a meteo UML ddiagram of protocols.
+
+http://www.umlet.com/
+
+* 05/21/2011 Saturday
+
+** Ropes for data structure
+Ropes are another interesting alternative to a linear representation.
+They are a binary tree (not necessarily full) which log(n) complexity
+for most operations.  With a zipper, fast iteration (movement from
+point) would probably also be possible.  The wikipedia article is
+pretty bad so look for the original paper to see details.  There are
+several implementation links, including for ocaml and common lisp.
+
+The rope would track measures to allow faster random access: O(log n).
+
+** Other data structures
+Has some good links: http://catch22.net/tuts/neatpad/17
+
+Another link that is on this page with a very good discussion of using
+balanced trees to do editing of hex files:
+http://www.chiark.greenend.org.uk/~sgtatham/tweak/btree.html
+
+
+* 05/20/2011 Friday
+
+** Futures
+Futures are going to be an excellent way to achieve concurrent
+execution without sacrificing data structure sensibility.  Using
+=future= a body is executed in a separate thread without blocking the
+current thread.  At the point of dereferencing, if the computation has
+not finished, the dereferencing thread blocks until it completes.
+This makes things really easy to start spawning lots of threads
+quickly.  This means I can essentially just spawn and use and things
+will run in concurrently on their own.  There are probably more
+complexities than this involved, but it's an encouraging start.
+
+The only thing I'd like to add is some sort of timeout check - if it
+takes longer than a certain amount of time, then cancel the future.
+We'll always need an initial layout, but further refinements should be
+timed.  So, I'll experiment and potentially use futures for initial
+layouts if they are fast enough while a thread-based scheme will be
+used for refinement.  A single layout refinement would look like
+#+BEGIN_SRC clojure
+(defn refine [init work timeout]
+  (let [cur (atom init)			;Set initial state
+	fut (future			;Spawn worker thread
+	     (while true
+	       (dosync (swap! cur work))
+	       (Thread/sleep 0)))]	;Worker: pause to see if cancelled
+    (Thread/sleep timeout)		;Main: Sleep until timeout
+    (when (not (future-done? fut))	;Main: stop worker if still running
+      (future-cancel fut))
+    @cur))
+#+END_SRC
+This approach is a little dangerous as I found out that futures, even
+when cancelled, sometimes don't get rid of the thread they were
+running.  Adding a =(Thread/sleep 0)= seems to alleviate this.
+
+I will write to the clojure group to find out what's happening here.
+
+** Separating concerns
+Things are getting complex in terms of representing logic
+vs. layouts.  The layout is intermediate and belongs to a buffer, keep
+that in mind.  It is a view of the logical structure.  One layout per
+buffer.  
+
+A mark should be part of the logical structure as well changes to the
+structure can change the marks.  Buffers request that the local
+structure track marks.  
+
+
 * 05/19/2011 Thursday
 
 ** Abiword
