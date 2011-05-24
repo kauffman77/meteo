@@ -119,6 +119,68 @@ easy operation in the measure-wise orientation and probably commmon
 enough to merit their own operations.
 
 
+** Behavior of insert
+Inserting is a little more subtle than what I originally thought.
+- When you kill the region, but then immediately yank, you want the
+  same state as before
+- What does it mean to insert a Mectangle at the beginning of a filled
+  measure?  If the mectangle does not contain more than one measure,
+  it seems reasonably to insert the notes before the notes in the
+  current measures and move those notes to the right in the current
+  measure
+- If the mectangle contains a measure break, the behavior is hard to
+  understand.  According to the kill/yank principle, a measure break
+  in the mectangle means start inserting and when a measure break is
+  reached, move to the next measure and continue inserting
+- While this makes sense in the kill/yank case, it's confusing in the
+  filled measure case
+- Ex: insert =D.2 |C.1 E.1 C.2|= at =|E.1 * E.1 C.1| B.2 F.2|=
+  according to the kill/yank paradigm this would give =|E.1 D.2 E.1
+  C.1|C.1 E.1 C.2 B.2 F.2|*=
+- Alternatively, we could use an replace paradigm giving =|E.1
+  D.2 |C.1 E.1 C.2|*=.  This is contrary to the text editing behavior,
+  but perhaps make more sense in the music setting
+- We lose the nice single measure interpretation then of yanking new
+  notes into a measure then
+- Inserting will then require more subtlety in replace mode as the
+  replaced notes need to be counted for overlapping beats.  For
+  instance, for insert =C.1 C.1 C.1= into =|* D.4 |= a choice must be
+  made between =|C.1 C.1 C.1 *|= and =|C.1 C.1 C.1 * D.1|= based on
+  whether we eliminate the D or preserve its remaining beat.
+- I am inclined to use the insert only paradigm along with and provide
+  some quick commands which would allow the overwrite behavior to be
+  accomplished.  For example doing a C-y would paste while C-u C-y
+  would paste using overwrite.  After some use analysis, I can change
+  this as needed.  Paste with overwrite is essentially
+  - Calculate the paste size
+  - Delete that mectangle
+  - Insert the paste notes
+
+** Fast highlight on switching
+It will be important to be able to quickly enable temporarily
+transient mark mode.  I'd like to be able to do this without the
+C-space C-space convention, just turn the highlighting on for the
+current region, what I have bound to C-c C-t right now.  In
+emacs-friendly mode, C-t will probably be the right binding, and this
+may actually work for windows-mac friendly will require something
+else.  There will be a lot of key binding conflicts between
+windows/linux. 
+
+** Finish measure
+I'd like to implement a couple functions bound to TAB and ENTER which
+will be finish-measure-next-measure and finish-measure-next-part.
+They add rests to fill the measure or eliminate extra notes (beyond
+time signature) and move to the next measure or part down.  
+
+** Score has parts map
+If the score keeps a vector of parts in the order they are to appear
+then each measure can keep a hash of its parts.  When drawing the
+parts, the score order is referenced for the order.  For one level of
+indirection, changing the order of parts becomes easy.  Information
+about each part can also be stored there: instrument, transposition,
+starting clef, etc.  Having this as a part of the score reference
+which is watched by the layout manager will allow changes to be
+immediately incorporated.
 
 
 * 05/22/2011 Sunday
