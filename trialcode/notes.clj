@@ -2,7 +2,6 @@
   (:require (clojure [zip :as zip]
 		     [xml :as xml])))
 
-
 ;; (defn note [len pitch]
 ;;   {:len len :pitch pitch})
 
