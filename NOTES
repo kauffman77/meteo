@@ -2,6 +2,23 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/24/2011 Tuesday
+
+** Magit
+Experimenting with Magit as a git interface in emacs to get commits
+done faster.  Has push pull capability also.  Works with "staging" -
+the notion of git add I think.  Can largely ignore this for now but
+may become more important later, just use the =S= to stage all changes
+and =c= to commit them.
+
+| C-x m | magit-status, my binding to pull up revision control |
+| c     | Commit changes, if none staged, operate on changes   |
+| s     | Stage file                                           |
+| S     | Stage all changed files                              |
+| u     | Unstage file                                         |
+| U     | Unstage all staged files                             |
+
+
 * 05/23/2011 Monday
 
 ** Git merge

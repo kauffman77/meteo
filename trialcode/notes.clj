@@ -2,9 +2,6 @@
   (:require (clojure [zip :as zip]
 		     [xml :as xml])))
 
-;; (defn note [len pitch]
-;;   {:len len :pitch pitch})
-
 (def lengths [:whole :half :quarter :eighth :sixteenth])
 (def len-dur {:whole 1 :half 0.5 :quarter 0.25 :eighth 0.125 :sixteenth 0.0625})
 (def dur-len (reduce (fn [m [k v]] (assoc m v k)) {} len-dur))
