@@ -15,6 +15,34 @@ Recall that to set a break point in code do
 This only breaks and allows the inspection of local variables.
 
 
+** The unforgiving compiler
+I got a weird error when trying to compile a file
+: Unknown location:
+:  error: java.lang.ClassCastException: java.lang.Character cannot be cast to clojure.lang.IObj
+After 10 minutes of playing, I started to do an incremental compile
+which led to the problem being a mistake in the syntax of a
+=defprotocol=, a comment was not associated with its method
+correctly.  The message was thoroughly unhelpful, something I will
+probably be able to look forward to a lot.  Liberal use of evaluation
+of expressions in the REPL may help.
+
+** defvar
+Putting =(:use [clojure.contrib.def])= in the =ns= declaration allows
+=defvar= to be used
+#+BEGIN_SRC clojure
+(defvar dot-dist 1
+  "Preferred distance from edge of bounding box of note heads")
+#+END_SRC
+
+** Layout
+Begun looking at layout and here is the way I envision things working.
+Each logical music object gets meta-data associated with it which
+describes the layout objects needed.  Each layout object is a key-val
+pair in the meta-data map.  Each key is the name (:head, :dot), and
+the value is a little language of constraints which describes how to
+get the positions of this element, possibly with respect to other
+elements.  
+
 * 05/24/2011 Tuesday
 
 ** Magit

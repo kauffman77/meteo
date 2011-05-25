@@ -57,8 +57,8 @@ height(this) :int
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>600</x>
-      <y>710</y>
+      <x>590</x>
+      <y>930</y>
       <w>240</w>
       <h>120</h>
     </coordinates>
@@ -104,22 +104,18 @@ layout(layout, new-score, edit-seq) :layout
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>640</x>
-      <y>360</y>
+      <x>630</x>
+      <y>370</y>
       <w>310</w>
-      <h>170</h>
+      <h>120</h>
     </coordinates>
-    <panel_attributes>Note
+    <panel_attributes>Notes
 --
 --
 Basic note protocol
 --
-pitch(n) :keyword
+pitches(n) :pitch seq
 dur(n) :keyword (:quarter, etc or nil)
-nname(n) :keyword (:C etc)
-accidental(n) :keyword (:#, :b, or nil)
-octave(n) :int
-nao(n) :vec [nname accidental octave]
 width(n,time-sig) :rational</panel_attributes>
     <additional_attributes/>
   </element>
@@ -150,8 +146,8 @@ update(m, edit-seq) :nil</panel_attributes>
     <panel_attributes>LayoutMeasure
 --
 --
-layout(measure) : mlayout
-layout(measure, parts) :mlayout</panel_attributes>
+layout(measure, ctx) : mlayout
+layout(measure, ctx, parts) :mlayout</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -174,7 +170,7 @@ coords(m) :(int,int,int)</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>640</x>
+      <x>630</x>
       <y>300</y>
       <w>160</w>
       <h>50</h>
@@ -189,8 +185,8 @@ notes(v) : note seq
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>640</x>
-      <y>540</y>
+      <x>630</x>
+      <y>620</y>
       <w>280</w>
       <h>110</h>
     </coordinates>
@@ -200,6 +196,24 @@ notes(v) : note seq
 diff(n1,n2) 
 Return display height diff between 
 two objects adhering to Note
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>630</x>
+      <y>500</y>
+      <w>310</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>Pitch
+--
+--
+keyw(n) :keyword
+pname(n) :keyword (:C etc)
+accidental(n) :keyword (:#, :b, or nil)
+octave(n) :int
 </panel_attributes>
     <additional_attributes/>
   </element>
