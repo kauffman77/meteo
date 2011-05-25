@@ -2,6 +2,19 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/25/2011 Wednesday
+
+** Debugging
+Recall that to set a break point in code do
+#+BEGIN_SRC clojure
+(require 'swank.core)
+...
+(swank.core/break)
+...
+#+END_SRC
+This only breaks and allows the inspection of local variables.
+
+
 * 05/24/2011 Tuesday
 
 ** Magit
@@ -17,7 +30,45 @@ and =c= to commit them.
 | S     | Stage all changed files                              |
 | u     | Unstage file                                         |
 | U     | Unstage all staged files                             |
+| P P   | Push commits to remote                               |
+| F F   | Pull commits from remote                             |
 
+Magit also has a nice key-popup buffer which is in magit-key-mode.el
+and worth a look for more emacs hacking.
+
+Manual is at http://magit.github.com/magit/magit.html
+Git tutorial http://www.kernel.org/pub/software/scm/git/docs/gittutorial.html
+
+** PDF export in Umlet
+Check this out as an insight into how to get my own pdf export
+working. 
+
+** Note ranges
+I'll probably mostly use keywords for note names =:Bb5= and =:C10=
+which will require a little parsing.
+
+** Multimethods vs. Protocols
+It seems that multimethods and protocols conflict just a little bit.
+Defining a protocol creates multimethods for each of the methods
+defined.  These are automatically set up in single dispatch form
+however and trying to define a multimethod with dispatch on more
+arguments causes problems
+
+** Swank trouble
+Had some trouble at school getting swank running under lein.  There is
+a =lein jack-in port= command that can be used inside =M-x
+clojure-jack-in= which is supposed to bootstrap the right slime file,
+but I haven't gotten it to work right.  The alternative that works is
+=lein swank= in the project directory.  This requires that leiningen
+installs the right plugin there by doing 
+: lein plugin install swank-clojure 1.3.0
+but gives access to all of clojure.contrib which is really nice.
+
+** Note durations
+Trying to come up with a way to do note durations effectively.  I'll
+want symbolic representations =:eigth :quarter= and will probably use
+=:quarter.= to represent the dotted versions.  Figuring out width is a
+little trickier.
 
 * 05/23/2011 Monday
 
