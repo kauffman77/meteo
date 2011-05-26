@@ -43,6 +43,37 @@ the value is a little language of constraints which describes how to
 get the positions of this element, possibly with respect to other
 elements.  
 
+A better approach occurred to me in the evening.  The right thing to
+do here is treat this as a constrained optimization problem right off
+the bat.  This involves the creation of boxes, constraints, and
+objective terms.  The boxes will be added to objective to check for
+collisions.  Some examples
+
+- Note heads a,b,c
+  - Add a box around the note, box(a) box(b) box(c)
+  - Constraint: ypos has a fixed value, ypos(a)=const, ...
+  - Constraint: spaced notes in the same Notes must have equal
+    xpos. Notes have xpos(a)-xpos(b)=0 and xpos(a)-xpos(b)=0
+  - Constraint: if ypos between two notes is only 1, fix xpos to be
+    1 su apart, higher note a is to the right xpos(a)-xpos(b)=0, set
+    split flag for notes
+- Stem u,v for notes a,b,c
+  - u is at notes, v is tip of stem
+  - Add line with coords x(u) y(u) x(v) y(v)
+  - Constraint xpos(u)-xpos(v)=0
+  - If split is set for notes, determine a is split out
+    - Constraint xpos(u)-xpos(a)=0
+  - Otherwise have binary var s for xpos of u
+    - Constraint xpos(u)-xpos(a)+width(a)*s=0
+  - Target ||ypos(u)-ypos(v)||-dist
+- Dot d for Notehead n
+  - Box(d)
+  - Constraint xpos(d)-xpos(n)=1+width(n)
+  - Constraint ypos(d)-ypos(n)=0
+
+This will allow a 0-1 integer solver to handle the problem.
+
+
 * 05/24/2011 Tuesday
 
 ** Magit
