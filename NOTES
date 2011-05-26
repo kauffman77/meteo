@@ -2,6 +2,22 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/26/2011 Thursday
+
+** Tuple Rhythms
+I neglected tuple rhythms in my initial pass at rhythms.  This will
+require a little rethinking of the representation, perhaps just
+including a tuple designator.  I updated the Notes protocol to include
+this. 
+
+** Next steps
+If I am going to set up an integer program for the layout of measures,
+I'll need to create the framework carefully.  
+
+** defnk for keywords
+There is a macro =clojure.contrib.def/defnk= which is supposed to
+allow keyword specification of 
+
 * 05/25/2011 Wednesday
 
 ** Debugging
@@ -13,7 +29,6 @@ Recall that to set a break point in code do
 ...
 #+END_SRC
 This only breaks and allows the inspection of local variables.
-
 
 ** The unforgiving compiler
 I got a weird error when trying to compile a file
@@ -70,9 +85,23 @@ collisions.  Some examples
   - Box(d)
   - Constraint xpos(d)-xpos(n)=1+width(n)
   - Constraint ypos(d)-ypos(n)=0
+- Ledger lines
+- Accidentals
+- Beams
+- Articulation markings
+- Slurs and Ties
+  - Can require multimeasure analysis
+  - Will probably model with two end points and a control point
+  - Binary choice: up slur or down
+- Tuple
+- Clef Sign
+- Key signature and changes
+- Time signature and changes
+- Performance instructions
+- Cres/decresc
+- Lots of other stuff
 
 This will allow a 0-1 integer solver to handle the problem.
-
 
 * 05/24/2011 Tuesday
 

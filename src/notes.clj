@@ -111,21 +111,31 @@ pitches are present, the Notes represents a rest."
       (/ (* cdur den tupmod) num)))
   (top-pitch [this] (sort #(- (diff %1 %2)) pits)))
 
-;; Ugly implementation of note creation, but should run with one pass
-;; of the arg list
-(defn to-notes
+(defnk to-notes
  "Create SimpleNotes with one or more pitches. Specify duration
-with :dur and tuplet with :tup"
-  ([& ns]
-     (letfn [(make [dur tup pits ns]
-               (if (seq ns)
-                 (let [f (first ns)]
-                   (condp = f
-                       :dur (recur (fnext ns) tup pits (nnext ns))
-                       :tup (recur dur (fnext ns) pits (nnext ns))
-                       (recur dur tup (conj pits f) (next ns))))
-                 (SimpleNotes. dur tup pits)))]
-       (make :quarter nil '() ns))))
+with :dur and tuplet with :tuplet and pitches with :pitches"
+  [:dur :quarter
+   :tuple :nil
+   :pitches '()]
+  (if (coll? pitches)
+    (SimpleNotes. dur tuple pitches)
+    (SimpleNotes. dur tuple (list pitches))))
+
+;; ;; Ugly implementation of note creation, but should run with one pass
+;; ;; of the arg list
+;; (defn to-notes
+;;  "Create SimpleNotes with one or more pitches. Specify duration
+;; with :dur and tuplet with :tup"
+;;   ([& ns]
+;;      (letfn [(make [dur tup pits ns]
+;;                (if (seq ns)
+;;                  (let [f (first ns)]
+;;                    (condp = f
+;;                        :dur (recur (fnext ns) tup pits (nnext ns))
+;;                        :tup (recur dur (fnext ns) pits (nnext ns))
+;;                        (recur dur tup (conj pits f) (next ns))))
+;;                  (SimpleNotes. dur tup pits)))]
+;;        (make :quarter nil '() ns))))
 
 (defprotocol Voice
   "The things you can do to a voice."

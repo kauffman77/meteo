@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="11.2">
-  <zoom_level>10</zoom_level>
+  <zoom_level>8</zoom_level>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>40</y>
-      <w>250</w>
-      <h>140</h>
+      <x>112</x>
+      <y>104</y>
+      <w>200</w>
+      <h>112</h>
     </coordinates>
     <panel_attributes>Edit
 --
@@ -22,10 +22,10 @@ last-edit(this) :edit-seq</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>640</x>
-      <y>240</y>
-      <w>210</w>
-      <h>50</h>
+      <x>584</x>
+      <y>264</y>
+      <w>168</w>
+      <h>40</h>
     </coordinates>
     <panel_attributes>Measure
 --
@@ -37,10 +37,10 @@ voices(partN) : voice seq
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>640</x>
-      <y>40</y>
-      <w>250</w>
-      <h>190</h>
+      <x>584</x>
+      <y>104</y>
+      <w>200</w>
+      <h>152</h>
     </coordinates>
     <panel_attributes>Mectangle
 --
@@ -57,10 +57,10 @@ height(this) :int
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>590</x>
-      <y>930</y>
-      <w>240</w>
-      <h>120</h>
+      <x>544</x>
+      <y>816</y>
+      <w>192</w>
+      <h>96</h>
     </coordinates>
     <panel_attributes>Draw
 --
@@ -74,10 +74,10 @@ ycoord(this) ?
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>700</y>
-      <w>310</w>
-      <h>110</h>
+      <x>112</x>
+      <y>632</y>
+      <w>248</w>
+      <h>88</h>
     </coordinates>
     <panel_attributes>Layout
 --
@@ -89,10 +89,10 @@ layout(mlayout-seq, parts) :layout</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>820</y>
-      <w>330</w>
-      <h>70</h>
+      <x>112</x>
+      <y>728</y>
+      <w>264</w>
+      <h>56</h>
     </coordinates>
     <panel_attributes>UpdateLayout
 --
@@ -104,10 +104,10 @@ layout(layout, new-score, edit-seq) :layout
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>630</x>
-      <y>370</y>
-      <w>310</w>
-      <h>120</h>
+      <x>576</x>
+      <y>368</y>
+      <w>248</w>
+      <h>96</h>
     </coordinates>
     <panel_attributes>Notes
 --
@@ -116,16 +116,17 @@ Basic note protocol
 --
 pitches(n) :pitch seq
 dur(n) :keyword (:quarter, etc or nil)
+tuple(n) :rational or nil
 width(n,time-sig) :rational</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>190</y>
-      <w>250</w>
-      <h>90</h>
+      <x>112</x>
+      <y>224</y>
+      <w>200</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>TrackMarkers
 --
@@ -138,10 +139,10 @@ update(m, edit-seq) :nil</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>580</y>
-      <w>250</w>
-      <h>110</h>
+      <x>112</x>
+      <y>536</y>
+      <w>200</w>
+      <h>88</h>
     </coordinates>
     <panel_attributes>LayoutMeasure
 --
@@ -153,10 +154,10 @@ layout(measure, ctx, parts) :mlayout</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>50</x>
-      <y>290</y>
-      <w>250</w>
-      <h>110</h>
+      <x>112</x>
+      <y>304</y>
+      <w>200</w>
+      <h>88</h>
     </coordinates>
     <panel_attributes>Marker
 --
@@ -170,10 +171,10 @@ coords(m) :(int,int,int)</panel_attributes>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>630</x>
-      <y>300</y>
-      <w>160</w>
-      <h>50</h>
+      <x>576</x>
+      <y>312</y>
+      <w>128</w>
+      <h>40</h>
     </coordinates>
     <panel_attributes>Voice
 --
@@ -185,10 +186,10 @@ notes(v) : note seq
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>630</x>
-      <y>620</y>
-      <w>280</w>
-      <h>110</h>
+      <x>576</x>
+      <y>568</y>
+      <w>224</w>
+      <h>88</h>
     </coordinates>
     <panel_attributes>defmulti diff
 --
@@ -202,10 +203,10 @@ two objects adhering to Note
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>630</x>
-      <y>500</y>
-      <w>310</w>
-      <h>110</h>
+      <x>576</x>
+      <y>472</y>
+      <w>248</w>
+      <h>88</h>
     </coordinates>
     <panel_attributes>Pitch
 --
