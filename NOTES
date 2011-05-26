@@ -12,11 +12,49 @@ this.
 
 ** Next steps
 If I am going to set up an integer program for the layout of measures,
-I'll need to create the framework carefully.  
+I'll need to create the framework carefully.  I need to treat the
+context very carfeully as I build the program.  According to the below
+discussion, I'll need to be tracking, Boxes, Constraints, and Target
+functions.  In addition I need to provide a context in which other
+objects can be 'looked up' such as the note head for the current
+object.  
+
+At first pass, this looks like a parent relationship.
+- A lot of objects have parents which are Pitch or Notes like heads,
+  stems, dots, accidentals, articulations and possibly also note-tied
+  expressions like dynamics
+- Some objects can have Measure parents such as tempo, key sig,
+  dynamics, chords
+
+However, there are a bunch of other objects that need something more
+- Beams have potentially many notes participating in them
+- Slurs and ties have at least two parents
+- Notes themselves may be cross-staff beamed making their parents
+  ambiguous (deal with this case later)
+
+In the case of the beams, we'll have two end points of the beam
+constrained to two note x positions and their stem y positions.
+However, getting the other note stems to match this may add bad
+nonlinear constraints.  Consider 3 note stems a2 b2 c2 (denoting the
+second control point, "top" of stem) and beam with points d1 d2.
+Constraints will be something like 
+
+x(d1) = x(a2)   y(d1) = y(a2)
+x(d2) = x(c2)   y(d2) = y(c2)
+y(b2) = (y(a2) + y(c2))/2
+
+This actually doesn't look as bad.  There may be some trickiness with
+getting the right offsets when padding is involved, but I think I can
+restrict myself to adding these thre constraints which are linear.
+
+For doing beam analysis, I'll need to be able to retrieve the ids of
+the stems of all the notes to be beamed.
+
 
 ** defnk for keywords
-There is a macro =clojure.contrib.def/defnk= which is supposed to
-allow keyword specification of 
+There is a macro =clojure.contrib.def/defnk= which allows keyword
+specification of function arguments.  Useful in a lot of cases though
+it screws up the doc string.
 
 * 05/25/2011 Wednesday
 
