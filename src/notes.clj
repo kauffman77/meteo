@@ -88,51 +88,44 @@ is composed of one or more pitches of the same duration.  If no
 pitches are present, the Notes represents a rest."
   (pitches [n] "Gives a sequence of objects implementing the Pitch protocol")
   (dur [n] "Duration of notes as a keyword or nil (e.g. :eighth, :quarter...)" )
-  (width [n] [n time-sig] "Fraction of a measure notes last time-sig, defaults to 4/4 time.")
+  (width [n] [n time-sig] "Fraction of a measure notes last time-sig, defaults to 4/4 time")
+  (tuple [n] "If non-nil, note is a tuple this is a rational such as 3/2 representing the tuple rhythm")
   (top-pitch [n] "Return the highest Pitch of the pitches in the Notes"))
 
-(defrecord SimpleNotes [d pits]
+(defrecord SimpleNotes [d tup pits]
   Notes
   (pitches [_] pits)
   (dur [_] d)
+  (tuple [_] tup)
   (width [this] (width this 'C))
   (width [this time-sig] 
     (let [cdur (common-dur d)
+          tup (or tup 1)
+          tupmod (/ 1 tup)
           [num den] (condp = time-sig
                       'C '(4 4)      ;Common time
                       :C '(4 4)
                       'Cut '(2 2)    ;Cut time
                       :Cut '(2 2)
                       time-sig)]
-      (/ (* cdur den) num)))
+      (/ (* cdur den tupmod) num)))
   (top-pitch [this] (sort #(- (diff %1 %2)) pits)))
 
+;; Ugly implementation of note creation, but should run with one pass
+;; of the arg list
 (defn to-notes
-  "Create SimpleNotes with one or more pitches"
-  ;; (fn [_ n & _] (
-  ([dur]
-     (if (dur common-dur)
-       (SimpleNotes. dur '())
-       (throw (Exception. (str "Bad note duration " dur)))))
-  ([dur n1 & ns]
-     (if (dur common-dur)
-       (SimpleNotes. dur (apply to-pitches (conj ns n1)))
-       (throw (Exception. (str "Bad note duration " dur))))))
-  
-;; (defn notes-width
-;;   "Fraction of a measure note with dur takes in time-sig.  Returns a
-;; ratio, convert to double with .doubleValue if needed.  If no
-;; time-signature is given, use 4/4 time as default."
-;;   ([dur] (notes-width dur 'C))
-;;   ([dur time-sig]
-;;      (let [cdur (common-dur dur)
-;;            [num den] (condp = time-sig
-;;                        'C '(4 4)      ;Common time
-;;                        :C '(4 4)
-;;                        'Cut '(2 2)    ;Cut time
-;;                        :Cut '(2 2)
-;;                        time-sig)]
-;;        (/ (* cdur den) num))))
+ "Create SimpleNotes with one or more pitches. Specify duration
+with :dur and tuplet with :tup"
+  ([& ns]
+     (letfn [(make [dur tup pits ns]
+               (if (seq ns)
+                 (let [f (first ns)]
+                   (condp = f
+                       :dur (recur (fnext ns) tup pits (nnext ns))
+                       :tup (recur dur (fnext ns) pits (nnext ns))
+                       (recur dur tup (conj pits f) (next ns))))
+                 (SimpleNotes. dur tup pits)))]
+       (make :quarter nil '() ns))))
 
 (defprotocol Voice
   "The things you can do to a voice."
