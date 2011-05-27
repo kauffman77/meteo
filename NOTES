@@ -2,6 +2,67 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/27/2011 Friday
+
+** Not integer programming exactly
+After some additional attention, it seems that the layout problem is
+not well characterized in the framework of linear integer
+programming.  A number of binary decisions must be made on which
+additional layout objects depend.  For example
+- Determine stem up or stem down
+- This dictates the left/right note placement of 2nds
+- It also dictates up or down orientation of flags or the control
+  point to be used for beaming
+These are discrete choices that can't be easily represented by the
+framework I'm laying out.  
+
+I think what I'm going to need is a discrete search. This is requires
+that each pass of adding objects use some language about choices that
+are available.
+
+Scratch that, found an ILP solution to this.
+
+** ILP Solution
+First, detect that a 2nd appears.  This will necessitate a combined
+note head, stem, flag, and possibly accent constraint generation.
+
+This divides into two cases: s=0 for upward stems and s=1 for downward
+stems.  In both cases, there are invariant expressions for where
+everything will land.  Ex:
+- 3 notes, a,b,c and 2 stem control points u,v, flag f and accidental r
+- s=0 is upward stems, s=1 is downward stems
+- Let h be the height difference between a (top note) and b (bottom
+  note)
+- The 2nd is between b/c (middle bottom)
+- Horizontal constraints on note heads
+  - x(a,c) = x(u) - w + w*s (left for s=0, right for s=1)
+  - x(b) = x(u) - ws (right for s=0, left for s=1)
+  - The vertical constraints are fixed for a, b, c
+- Vertical constraints on the stem
+  - y(u) <= y(v) (u is above v)
+  - y(u) <= y(a) + h*s  (above a for s=0, above c for s=1)
+  - y(v) >= y(a) + h*s  (below c for s=0, below a c for s=1)
+  - Actually after considering this further, it doesn't really
+    guarantee what I want it to do.
+- Flag vertical position
+  - x(f) = x(u)
+  - y(f) = y(u) + y(v) - h*s
+- Accidental position
+  - Desired offset off from note head
+  - y(r) = y(a) - hs + h + off - 2*off*s
+  - x(r) = x(a)
+
+This needs some refinement because it doesn't represent the actual
+constraints I need for stems, but it's closer.
+
+** Discrete search space
+This raises the question: how does one describe a discrete search
+problem in lisp?
+
+I think we'll need a constraint language similar to the one I started
+using for matrices.
+
+
 * 05/26/2011 Thursday
 
 ** Tuple Rhythms
