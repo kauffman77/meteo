@@ -2,6 +2,38 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 05/31/2011 Tuesday
+
+** A better ILP solution
+Here is a simplified representation of stems as an ILP.
+
+- Top chord note A and bottom B, MAX is longest stem length 
+- 2 control points u for down stem, v for up stem
+- s=0 is down, s=1 is up, t is point for the flag/beam
+- y(u) >= y(B)
+- y(u) <= y(B) + MAX - MAX*s
+- y(v) <= y(A) 
+- y(v) >= y(A) - MAX*s
+- y(t) = [y(u) - y(B)*s] + [y(v) + y(A)*s - y(A)]
+
+The two control points u,v are bounded above and below.  When one is
+active, it has a range, when not, it is forced to be at the top/bottom
+note.  The flag control point is determined by adding u and v but
+subtracting their inactive values.
+
+** TODO Slowing down
+Going to have to slow down on meteo for a while to return to
+research.  Here are the high priority concerns at this point.
+
+- Need a solver for the ILPs that I will construct
+- Need to settle on the description language and framework of
+  construction when setting up the layout problem
+- Still haven't settled on where to store layout information
+  - Is it meta info to preserve the logical data structure
+  - Or is it just a field
+  - What is the difference between a set up layout and a solved layout
+
+
 * 05/27/2011 Friday
 
 ** Not integer programming exactly
