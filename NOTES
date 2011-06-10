@@ -2,6 +2,23 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 06/06/2011 Monday
+
+** Strange loop conference
+https://thestrangeloop.com/
+
+Could be interesting if I have time for it.  Early registration ends
+July 19, Rich Hickey is the first keynote speaker and Guy Steele spoke
+last year.
+
+Videos from last year
+https://thestrangeloop.com/news/strange-loop-video-schedule
+
+
+** ILP Tutorial
+http://www.ie.boun.edu.tr/~taskin/pdf/IP_tutorial.pdf
+May be useful to get ideas on coding solution algorithms.
+
 * 05/26/2011 Thursday
 
 ** Tuple Rhythms
