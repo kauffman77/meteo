@@ -2,6 +2,81 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 06/10/2011 Friday
+
+** Spreadsheet/hash representation				      :table:
+I was considering the similarity between the internal music layout and
+a spreadsheet.  Took a quick look at the gnumeric internals as it
+would give a decent idea of how insertion/deletion would work.  The
+internal representation is a =g_hash_table= which is used fo
+insertion/deletion.  Empty cells simply don't exist in the hash and
+have a default display.  When a row or column is inserted, cells
+beyond the region are scanned and their position is updated.
+
+In my case, I would index by measure and part, either part name or
+number.  This would give these approximate tradeoffs compared to the
+measure-wise linear representation.
+
+|--------------------------------+------+------+-----+---------------------------------|
+| Operation                      | Freq | Hash |  MW | Notes                           |
+| Score                          |      |  652 | 650 |                                 |
+|--------------------------------+------+------+-----+---------------------------------|
+| In-measure move                |   10 |   10 |  10 | Both right/left                 |
+| Accross-measure move           |    8 |    8 |   8 | Lookup vs up, right, part       |
+| Next/prev part                 |    7 |    8 |   9 | Lookup vs next part             |
+| In-measure edit                |   10 |   10 |  10 | Both direct                     |
+| Accross-measure edit           |    7 |    8 |   7 | Lookups vs MW must track rect   |
+| In-measure multipart edit      |    7 |    8 |   8 | Lookups vs direct for MW        |
+| Accross-measure multipart edit |    5 |    8 |   7 | Lookups vs track rect for MW    |
+| Synch of aligned measures      |   10 |    8 |   9 | Lookups vs MW is direct         |
+| Measure insertion/deletion     |    7 |    4 |   8 | Hash must iterate, MW is direct |
+| Part insertion/deletion        |    4 |    4 |   4 | Hash must iterate, MW must walk |
+| Jump to measure                |    7 |    8 |   3 | Lookup vs MW walk               |
+|--------------------------------+------+------+-----+---------------------------------|
+#+TBLFM: @2$3=vsum(@II..@III * @II$2..@III$2)::@2$4=vsum(@II..@III * @II$2..@III$2)
+
+The part insertion may not be a factor for either representation
+assuming I can implement some sort of default display for missing
+parts.  However, this will make much more sense in the Hash
+representation as we'll have to deal with default displays for empty
+"cells" (measures in a part) in a lot of cases.
+
+Using a hash would alleviate the need for zippers to some extent.
+Measure/part coordinates can be used much more directly and
+whole-measure rectangles are much easier to represent as their own
+hashes.  In copying a region, I might make use of transients to speed
+creation.  There is still the need to scan around in beats which may
+be better represented using zippers, but since measures are relatively
+much shorter, they can be created quickly, moved through, then
+discarded.  Thus we don't need to keep a cache of zippers around.
+
+The key feature of the Hash representation is how fast lookup happens.
+I'm just guessing above that the a hash-map will have lookup speed
+only slightly slower than going up and over in the list
+representation.  If this turns out to be wrong, a lot of basic
+operations would probably suffer.  Even a small reduction in speed
+will cause the measure-wise representation to be faster.  The only
+real gain will be in terms of directly jumping.  This will still have
+applications for graphical access: very little scanning will be needed
+to get to an arbitrary location.
+
+A lot of the techniques that are applied in gnumeric can be copied
+which will make implementation a little easier (not re-inventing the
+wheel).  It is also comforting to see that gnumeric runs pretty fast
+even for the expensive row/col insertion operations.  The slowest part
+seemed to be undoing an insert/delete.
+
+** Emacs Undo power
+Was looking at [[info:emacs#Undo][emacs undo]] and it turns out it has region-specific undo
+capability.  This is sort of stunning: undo changes only in a
+highlighted region.  I'm not sure that I can replicate this one in
+meteo, but keep it in mind.
+
+* 06/01/2011 Wednesday
+
+** Kevin on github
+https://github.com/deronnek/dotenv
+
 * 05/31/2011 Tuesday
 
 ** A better ILP solution
@@ -819,7 +894,7 @@ have their own layout specs such as above or below the staff.
 
 * 05/18/2011 Wednesday
 
-** Layout orientation
+** Layout orientation						      :table:
 After some thought, I have begun reconsidering the proper arrangement
 of the logical data representation.  The two choices I see right now
 are to do a part-wise or measure-wise.  Part-wise has each part as a
