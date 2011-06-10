@@ -1,11 +1,16 @@
-(import java.io.File
-	'(java.awt Font RenderingHints )
-	'(java.awt.geom Line2D$Double))
+(ns fonts
+  (:import java.io.File)
+  (:import [java.awt Font RenderingHints] )
+  (:import [java.awt.geom Line2D$Double]))
 
 (set! *warn-on-reflection* true)
 (def font
-     (let [f (Font/createFont Font/TRUETYPE_FONT
-			      (File. "/home/kauffman/devel/meteo/trialcode/emmentaler-16.otf"))]
+  (let [f (Font/createFont
+           Font/TRUETYPE_FONT
+           ;;Font/TYPE1_FONT
+           (File. "/home/grad02/kauffman/meteo/trialcode/emmentaler-16.otf"))]                              
+
+                                        ;			      (File. "/home/kauffman/devel/meteo/trialcode/emmentaler-16.otf"))]
       (.deriveFont f (float 100))))
 
 (import

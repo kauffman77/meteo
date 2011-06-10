@@ -2,6 +2,7 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+<<<<<<< HEAD
 * 06/06/2011 Monday
 
 ** Strange loop conference
@@ -18,6 +19,184 @@ https://thestrangeloop.com/news/strange-loop-video-schedule
 ** ILP Tutorial
 http://www.ie.boun.edu.tr/~taskin/pdf/IP_tutorial.pdf
 May be useful to get ideas on coding solution algorithms.
+=======
+* 06/10/2011 Friday
+
+** Spreadsheet/hash representation				      :table:
+I was considering the similarity between the internal music layout and
+a spreadsheet.  Took a quick look at the gnumeric internals as it
+would give a decent idea of how insertion/deletion would work.  The
+internal representation is a =g_hash_table= which is used fo
+insertion/deletion.  Empty cells simply don't exist in the hash and
+have a default display.  When a row or column is inserted, cells
+beyond the region are scanned and their position is updated.
+
+In my case, I would index by measure and part, either part name or
+number.  This would give these approximate tradeoffs compared to the
+measure-wise linear representation.
+
+|--------------------------------+------+------+-----+---------------------------------|
+| Operation                      | Freq | Hash |  MW | Notes                           |
+| Score                          |      |  652 | 650 |                                 |
+|--------------------------------+------+------+-----+---------------------------------|
+| In-measure move                |   10 |   10 |  10 | Both right/left                 |
+| Accross-measure move           |    8 |    8 |   8 | Lookup vs up, right, part       |
+| Next/prev part                 |    7 |    8 |   9 | Lookup vs next part             |
+| In-measure edit                |   10 |   10 |  10 | Both direct                     |
+| Accross-measure edit           |    7 |    8 |   7 | Lookups vs MW must track rect   |
+| In-measure multipart edit      |    7 |    8 |   8 | Lookups vs direct for MW        |
+| Accross-measure multipart edit |    5 |    8 |   7 | Lookups vs track rect for MW    |
+| Synch of aligned measures      |   10 |    8 |   9 | Lookups vs MW is direct         |
+| Measure insertion/deletion     |    7 |    4 |   8 | Hash must iterate, MW is direct |
+| Part insertion/deletion        |    4 |    4 |   4 | Hash must iterate, MW must walk |
+| Jump to measure                |    7 |    8 |   3 | Lookup vs MW walk               |
+|--------------------------------+------+------+-----+---------------------------------|
+#+TBLFM: @2$3=vsum(@II..@III * @II$2..@III$2)::@2$4=vsum(@II..@III * @II$2..@III$2)
+
+The part insertion may not be a factor for either representation
+assuming I can implement some sort of default display for missing
+parts.  However, this will make much more sense in the Hash
+representation as we'll have to deal with default displays for empty
+"cells" (measures in a part) in a lot of cases.
+
+Using a hash would alleviate the need for zippers to some extent.
+Measure/part coordinates can be used much more directly and
+whole-measure rectangles are much easier to represent as their own
+hashes.  In copying a region, I might make use of transients to speed
+creation.  There is still the need to scan around in beats which may
+be better represented using zippers, but since measures are relatively
+much shorter, they can be created quickly, moved through, then
+discarded.  Thus we don't need to keep a cache of zippers around.
+
+For copy/paste, we'd also have direct access to the notion of the
+Mectangle rather than having to worry about which parts are there.  A
+Mectangle just becomes a hash indexed by measure and part number
+rather than part name.  This is a lot simpler than the other
+structures I was thinking of, both in terms of its creation and
+insertion. 
+
+The key feature of the Hash representation is how fast lookup happens.
+I'm just guessing above that the a hash-map will have lookup speed
+only slightly slower than going up and over in the list
+representation.  If this turns out to be wrong, a lot of basic
+operations would probably suffer.  Even a small reduction in speed
+will cause the measure-wise representation to be faster.  The only
+real gain will be in terms of directly jumping.  This will still have
+applications for graphical access: very little scanning will be needed
+to get to an arbitrary location.
+
+A lot of the techniques that are applied in gnumeric can be copied
+which will make implementation a little easier (not re-inventing the
+wheel).  It is also comforting to see that gnumeric runs pretty fast
+even for the expensive row/col insertion operations.  The slowest part
+seemed to be undoing an insert/delete.
+
+
+
+** Emacs Undo power
+Was looking at [[info:emacs#Undo][emacs undo]] and it turns out it has region-specific undo
+capability.  This is sort of stunning: undo changes only in a
+highlighted region.  I'm not sure that I can replicate this one in
+meteo, but keep it in mind.
+
+* 06/01/2011 Wednesday
+
+** Kevin on github
+https://github.com/deronnek/dotenv
+
+* 05/31/2011 Tuesday
+
+** A better ILP solution
+Here is a simplified representation of stems as an ILP.
+
+- Top chord note A and bottom B, MAX is longest stem length 
+- 2 control points u for down stem, v for up stem
+- s=0 is down, s=1 is up, t is point for the flag/beam
+- y(u) >= y(B)
+- y(u) <= y(B) + MAX - MAX*s
+- y(v) <= y(A) 
+- y(v) >= y(A) - MAX*s
+- y(t) = [y(u) - y(B)*s] + [y(v) + y(A)*s - y(A)]
+
+The two control points u,v are bounded above and below.  When one is
+active, it has a range, when not, it is forced to be at the top/bottom
+note.  The flag control point is determined by adding u and v but
+subtracting their inactive values.
+
+** TODO Slowing down
+Going to have to slow down on meteo for a while to return to
+research.  Here are the high priority concerns at this point.
+
+- Need a solver for the ILPs that I will construct
+- Need to settle on the description language and framework of
+  construction when setting up the layout problem
+- Still haven't settled on where to store layout information
+  - Is it meta info to preserve the logical data structure
+  - Or is it just a field
+  - What is the difference between a set up layout and a solved layout
+
+
+* 05/27/2011 Friday
+
+** Not integer programming exactly
+After some additional attention, it seems that the layout problem is
+not well characterized in the framework of linear integer
+programming.  A number of binary decisions must be made on which
+additional layout objects depend.  For example
+- Determine stem up or stem down
+- This dictates the left/right note placement of 2nds
+- It also dictates up or down orientation of flags or the control
+  point to be used for beaming
+These are discrete choices that can't be easily represented by the
+framework I'm laying out.  
+
+I think what I'm going to need is a discrete search. This is requires
+that each pass of adding objects use some language about choices that
+are available.
+
+Scratch that, found an ILP solution to this.
+
+** ILP Solution
+First, detect that a 2nd appears.  This will necessitate a combined
+note head, stem, flag, and possibly accent constraint generation.
+
+This divides into two cases: s=0 for upward stems and s=1 for downward
+stems.  In both cases, there are invariant expressions for where
+everything will land.  Ex:
+- 3 notes, a,b,c and 2 stem control points u,v, flag f and accidental r
+- s=0 is upward stems, s=1 is downward stems
+- Let h be the height difference between a (top note) and b (bottom
+  note)
+- The 2nd is between b/c (middle bottom)
+- Horizontal constraints on note heads
+  - x(a,c) = x(u) - w + w*s (left for s=0, right for s=1)
+  - x(b) = x(u) - ws (right for s=0, left for s=1)
+  - The vertical constraints are fixed for a, b, c
+- Vertical constraints on the stem
+  - y(u) <= y(v) (u is above v)
+  - y(u) <= y(a) + h*s  (above a for s=0, above c for s=1)
+  - y(v) >= y(a) + h*s  (below c for s=0, below a c for s=1)
+  - Actually after considering this further, it doesn't really
+    guarantee what I want it to do.
+- Flag vertical position
+  - x(f) = x(u)
+  - y(f) = y(u) + y(v) - h*s
+- Accidental position
+  - Desired offset off from note head
+  - y(r) = y(a) - hs + h + off - 2*off*s
+  - x(r) = x(a)
+
+This needs some refinement because it doesn't represent the actual
+constraints I need for stems, but it's closer.
+
+** Discrete search space
+This raises the question: how does one describe a discrete search
+problem in lisp?
+
+I think we'll need a constraint language similar to the one I started
+using for matrices.
+
+>>>>>>> 6020f18e8a39554afffc632bd9a734e5abb84d23
 
 * 05/26/2011 Thursday
 
@@ -27,7 +206,7 @@ require a little rethinking of the representation, perhaps just
 including a tuple designator.  I updated the Notes protocol to include
 this. 
 
-** Next steps
+** Layout Next steps
 If I am going to set up an integer program for the layout of measures,
 I'll need to create the framework carefully.  I need to treat the
 context very carfeully as I build the program.  According to the below
@@ -67,11 +246,63 @@ restrict myself to adding these thre constraints which are linear.
 For doing beam analysis, I'll need to be able to retrieve the ids of
 the stems of all the notes to be beamed.
 
+** Setting up context for Layout
+Need to track 
+- IDs of objects added and their logical owner
+- Boxes
+- Constraints
+- Targets
+I started out doing this by associating everything with the objects
+themselves through meta data.  This preserves the logical structure
+exactly.
+
+** TODO Note head layout
+- Add boxes for all notes
+- Add constraints for ypos of each note
+- Check to see if notes are height 1 apart
+- If no notes are 1 apart, then constrain all heads to have xpos of
+  top head
+- If there are notes with ypos diff of 1, require offsets between xpos
+  of offending notes
+- This also requires heads to change sides based on stem direction, up
+  or down
+- This looks very hard right now without an understanding of how do
+  stems so I'll leave closely spaced pitches for later
+
+
+** TODO Font problems on Linux
+I was trying to run the fonts.clj trialcode at school and ran into
+problems, it appears there is some sort of font problem with the
+Font/TRUETYPE_FONT not agreeing with the opentype font Emmanteler.  It
+works fine at home but gives a FontFormatException claiming the font
+type is unsupported.
+
+According to this post, it may not be supported because it may be a
+TrueType font internally which is no good on linux.
+http://mindprod.com/jgloss/opentype.html
+I'll probably want to convert this to the OTF with "PostScript Adobe
+CCF internally" which seems to have the best support.  However, the
+fact that the current version worked at home on the virtual machine is
+not comforting for compatibility.  
+
+Check the java versions used between home and school.
 
 ** defnk for keywords
 There is a macro =clojure.contrib.def/defnk= which allows keyword
 specification of function arguments.  Useful in a lot of cases though
 it screws up the doc string.
+
+** Lack of IP solvers for java
+There is a lack of IP solvers for java, all that seems to exist are
+hooks into C libraries.  This concerns me some.  Options are port a C
+version or try to cast the problem in a different way.  In general,
+there seem to be a lack of any good numerical libraries for java.  It
+occurs to me now that most of those ILP solvers are not online: they
+only produce solutions at convergence which might cramp the UI
+experience quite a bit.
+
+I might have to investigate constraint satisfaction problems in Lisp
+as an alternative.
 
 * 05/25/2011 Wednesday
 
@@ -125,8 +356,8 @@ collisions.  Some examples
   - Constraint: spaced notes in the same Notes must have equal
     xpos. Notes have xpos(a)-xpos(b)=0 and xpos(a)-xpos(b)=0
   - Constraint: if ypos between two notes is only 1, fix xpos to be
-    1 su apart, higher note a is to the right xpos(a)-xpos(b)=0, set
-    split flag for notes
+    glyph width apart, higher note a is to the right
+    xpos(a)-xpos(b)=width, set split flag for notes
 - Stem u,v for notes a,b,c
   - u is at notes, v is tip of stem
   - Add line with coords x(u) y(u) x(v) y(v)
@@ -691,7 +922,7 @@ have their own layout specs such as above or below the staff.
 
 * 05/18/2011 Wednesday
 
-** Layout orientation
+** Layout orientation						      :table:
 After some thought, I have begun reconsidering the proper arrangement
 of the logical data representation.  The two choices I see right now
 are to do a part-wise or measure-wise.  Part-wise has each part as a
