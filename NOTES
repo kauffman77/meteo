@@ -50,6 +50,13 @@ be better represented using zippers, but since measures are relatively
 much shorter, they can be created quickly, moved through, then
 discarded.  Thus we don't need to keep a cache of zippers around.
 
+For copy/paste, we'd also have direct access to the notion of the
+Mectangle rather than having to worry about which parts are there.  A
+Mectangle just becomes a hash indexed by measure and part number
+rather than part name.  This is a lot simpler than the other
+structures I was thinking of, both in terms of its creation and
+insertion. 
+
 The key feature of the Hash representation is how fast lookup happens.
 I'm just guessing above that the a hash-map will have lookup speed
 only slightly slower than going up and over in the list
@@ -65,6 +72,8 @@ which will make implementation a little easier (not re-inventing the
 wheel).  It is also comforting to see that gnumeric runs pretty fast
 even for the expensive row/col insertion operations.  The slowest part
 seemed to be undoing an insert/delete.
+
+
 
 ** Emacs Undo power
 Was looking at [[info:emacs#Undo][emacs undo]] and it turns out it has region-specific undo
