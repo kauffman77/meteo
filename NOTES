@@ -2,27 +2,8 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
-<<<<<<< HEAD
-* 06/06/2011 Monday
-
-** Strange loop conference
-https://thestrangeloop.com/
-
-Could be interesting if I have time for it.  Early registration ends
-July 19, Rich Hickey is the first keynote speaker and Guy Steele spoke
-last year.
-
-Videos from last year
-https://thestrangeloop.com/news/strange-loop-video-schedule
-
-
-** ILP Tutorial
-http://www.ie.boun.edu.tr/~taskin/pdf/IP_tutorial.pdf
-May be useful to get ideas on coding solution algorithms.
-=======
 * 06/10/2011 Friday
-
-** Spreadsheet/hash representation				      :table:
+** Spreadsheet/hash representation 				      :table:
 I was considering the similarity between the internal music layout and
 a spreadsheet.  Took a quick look at the gnumeric internals as it
 would give a decent idea of how insertion/deletion would work.  The
@@ -91,13 +72,100 @@ wheel).  It is also comforting to see that gnumeric runs pretty fast
 even for the expensive row/col insertion operations.  The slowest part
 seemed to be undoing an insert/delete.
 
-
-
 ** Emacs Undo power
 Was looking at [[info:emacs#Undo][emacs undo]] and it turns out it has region-specific undo
 capability.  This is sort of stunning: undo changes only in a
 highlighted region.  I'm not sure that I can replicate this one in
 meteo, but keep it in mind.
+
+** Layout tactics
+A couple ideas on layout production
+
+- Use a pass to create objects and constraints between objects
+- Score objects each get a series of fields
+  - :layout has layout objects and their corresponding variables 
+  - :constraints have symbols in equations form
+  - :variables are the variables for the object 
+- Use a second pass to accumulate
+
+Working backwards, to draw the score, I'll need to traverse the score
+executing drawing instructions.  This will look something like:
+- Start at the upper left coordinates 
+- Enter the first part and create a context based on the part
+- Enter the first measure adding to the context
+- Obtain the coordinates of the first measure move the cursor there
+- Draw a staff using the width of the measure
+- Enter the measure's layout objects (staff, time/key sig, markings)
+- For each object retrieve its glyph and coordinates and draw them
+- Enter the measure's entries (notes/chords)
+- For each entry, enter it's layout objects
+
+Trying to get a uniform layout routine.  Would like to have layout
+objects, then move to children which also have layout objects.  This
+would make drawing very easy, need to be careful of relative positions
+of coordinate systems.  Move to parent's 0 position, draw layout
+objects relative to it.  Then traverse children.  Move to child's
+position, then recurse on it.  This would start to diverge from
+maintaining the correspondence between logical and layout
+representations.  It would also allow more flexibility with modifying
+the layout.  
+
+For example, the objects/children model allows system breaks much more
+easily than the the logical structure in the page view.
+
+- We start with one system for the page and determine approximate
+  measure widths and heights for each using a cheap function.
+- Then break the global system into multiple systems on multiple pages
+  according to the first estimate.
+- Add pages as children to the score; add systems as children to each
+  page; add page objects (page number, part id) to each page
+- Optimize layout for each measure/system to get positions and new
+  widths/heights
+- Return to page level, optimize systems and page level objects
+- If conflicts arise, readjust the measure to system assignment and
+  repeat measure-level and page-level layout optimizations
+
+At each step for drawing, it's simply a matter of traversing the
+objects at each level and then descending to the children: 
+- global 
+- pages: title, composer, page# 
+- systems: 
+- parts: part names, staffgroups
+- staves
+- measures: clef, time/key sig, expressions
+- voices:
+
+This may actually call for some further research into drawing as
+dictated by the need to draw on a page.
+
+** Mid-measure clef changes
+Inserting a clef mid-measure complicates a number of things
+- Does the clef belong to a particular voice?  How is it tracked?
+- Subsequent measures must be adjusted to the new clef - do the adjust
+  based on their current pitch or current line?
+- Insertion of notes in the measure must be relative to the new clef -
+  changing from treble to bass, pressing 'c' to insert a c must pick
+  the proper position
+- The above means insertion is not easy, must scan backwards to the
+  nearest clef
+
+
+* 06/06/2011 Monday
+
+** Strange loop conference
+https://thestrangeloop.com/
+
+Could be interesting if I have time for it.  Early registration ends
+July 19, Rich Hickey is the first keynote speaker and Guy Steele spoke
+last year.
+
+Videos from last year
+https://thestrangeloop.com/news/strange-loop-video-schedule
+
+
+** ILP Tutorial
+http://www.ie.boun.edu.tr/~taskin/pdf/IP_tutorial.pdf
+May be useful to get ideas on coding solution algorithms.
 
 * 06/01/2011 Wednesday
 
@@ -843,7 +911,7 @@ This process illustrates a couple things
 - We need to be able to access instrument and staff information pretty
   quickly to determine the top staff line
   - Note that there may be a change clef or change of instrument at
-    some point so this is not a global propert of the staff
+    some point so this is not a global property of the staff
   - For ultimate flexibility, this may not even be a property of
     measure but of just some notes.  However, this probably does not
     come up often
@@ -857,8 +925,9 @@ This process illustrates a couple things
 - Once the top line staff note and target note position are
   determined, vertical position is easy
 
-How do we carry information like current staff/instrument trasposition
-around efficiently?  My current thoughts go in two directions
+How do we carry information like current staff/instrument
+transposition around efficiently?  My current thoughts go in two
+directions
 - A tree data structure representation of the entire score rather than
   a linear structure.  Context is looked up by looking at a parent
   node or a series of parent nodes.  This is nice as any note can look
