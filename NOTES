@@ -2,6 +2,34 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 08/08/2011 Monday
+
+** ILP: Mixed integer linear programming solvers
+
+*** lpsolve
+Written in C, claims to have a java interface, appears to have a fair history.
+http://lpsolve.sourceforge.net/5.5/
+
+*** glpk
+Also claims to have a JNI interface to java.  Just about everyone
+refers to this
+
+*** Qoca / Cassowary
+Very interesting "incremental" constraint solver used for graphics.
+Look carefully at this as it has pure java versions for everything and
+may be great for our incremental optimization of layout. However, it
+seems to lack the binary variables required for some of the layout
+problems. 
+
+http://www.csse.monash.edu.au/projects/qoca/
+http://www.cs.washington.edu/research/constraints/cassowary/
+
+
+*** ojalgo
+
+Another one that may be useful.
+http://ojalgo.org/mathematical_programming.html
+
 * 06/10/2011 Friday
 ** Spreadsheet/hash representation 				      :table:
 I was considering the similarity between the internal music layout and
