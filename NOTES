@@ -2,6 +2,12 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 08/25/2011 Thursday
+** Boyd and Vandenberghe
+Another resource is Boyd and Vandenberghe in which section 8.8
+discusses floor planning: placement of boxes, potentially putting the
+problem into convex optimization.
+
 * 08/08/2011 Monday
 
 ** ILP: Mixed integer linear programming solvers
