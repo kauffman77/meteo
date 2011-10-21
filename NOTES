@@ -2,6 +2,26 @@
 #+STARTUP: showall
 #+OPTIONS: H:3 num:nil toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t TeX:t LaTeX:nil skip:t d:t tags:not-in-toc
 
+* 10/21/2011 Friday
+
+Listened to Rich Hickey's talk and one concrete thing struck me.  He
+mentioned: "If you're using this thing gets the data, this thing
+process, this other thing for something else in that order, then
+you've complected Thing A with Thing B if they call one another?"  He
+advocates strongly using queues for stuff like this because the parts
+are decoupled.  Not sure exactly how this would look in my case, but
+its definitely worth considering further.
+
+Also learned the word "complect" which means to complicate
+something. Archaic but fun.
+
+* 09/07/2011 Wednesday
+
+** Light Reports, iText
+http://code.google.com/p/lighttexteditor/
+Text editor in clojure that I can learn from as well as integration
+with iText which will be invaluable.
+
 * 08/25/2011 Thursday
 ** Boyd and Vandenberghe
 Another resource is Boyd and Vandenberghe in which section 8.8
